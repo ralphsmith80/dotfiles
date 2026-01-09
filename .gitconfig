@@ -1,0 +1,51 @@
+[alias]
+    lg = log --graph --decorate --pretty=oneline --abbrev-commit
+    lga = log --graph --decorate --pretty=oneline --abbrev-commit --all
+    ll = log --pretty=format:"%C(yellow)%h%Cred%d\\ %Creset%s%Cblue\\ [%cn]" --decorate --numstat
+    ld = log --pretty=format:"%C(yellow)%h\\ %C(green)%ad%Cred%d\\ %Creset%s%Cblue\\ [%cn]" --decorate --date=short --graph
+    ls = log --pretty=format:"%C(green)%h\\ %C(yellow)[%ad]%Cred%d\\ %Creset%s%Cblue\\ [%cn]" --decorate --date=relative
+    st = status
+    co = clone
+    ci = commit
+    graph = "!sh -c 'if git show-ref --quiet refs/heads/main; then base=main; else base=master; fi; git log --branches --pretty=oneline --graph --all --abbrev-commit --ancestry-path $base~2..HEAD'"
+    # https://adamcod.es/2014/12/10/git-pull-correct-workflow.html
+    # usage: `git update-from <remote> <branch-name>`
+    # example: `git update-from origin master`
+    update-from = "!f() { git fetch $1 --prune; git merge --ff-only $1/$2 || git rebase --preserve-merges $1/$2; }; f"
+    # http://stackoverflow.com/questions/17195861/undo-git-update-index-assume-unchanged-file
+    # to leave the file in the repo but ignore future changes to it:
+    # git update-index --assume-unchanged <file>
+    ignore-file = update-index --assume-unchanged
+    # and to undo this:
+    # git update-index --no-assume-unchanged <file>
+    unignore-file = update-index --no-assume-unchanged
+    # to find out which files have been set this way:
+    # git ls-files -v|grep '^h'
+
+[color]
+    ui = auto
+
+[color "diff"]
+    meta = yellow
+    frag = magenta
+    old = red
+    new = green
+
+[color "status"]
+    added = green
+    changed = yellow
+    untracked = cyan
+
+[diff]
+    # tool = vscode
+    tool = vimdiff
+
+[difftool "vscode"]
+    cmd = code --wait --diff $LOCAL $REMOTE
+
+[push]
+    default = current
+
+[user]
+    name = Ralph Smith
+    email = devralph@fastmail.com

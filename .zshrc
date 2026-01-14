@@ -131,6 +131,7 @@ source $ZSH/oh-my-zsh.sh
 alias config="/usr/bin/git --git-dir=$HOME/.cfg/ --work-tree=$HOME"
 alias nvim-kickstart='NVIM_APPNAME="nvim-kickstart" nvim'
 alias nvim-lazy='NVIM_APPNAME="nvim-lazyvim" nvim'
+alias nvim='NVIM_APPNAME="nvim-lazyvim" nvim'
 
 export FLATPAK_HOME="$HOME/.local/share/flatpak/exports/"
 export PATH="$FLATPAK_HOME/bin:$PATH"

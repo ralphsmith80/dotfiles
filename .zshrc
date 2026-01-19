@@ -108,7 +108,7 @@ source $ZSH/oh-my-zsh.sh
 
 # Preferred editor for local and remote sessions
 # if [[ -n $SSH_CONNECTION ]]; then
-#   export EDITOR='vim'
+#   export EDITOR='vim'  
 # else
 #   export EDITOR='nvim'
 # fi
@@ -132,6 +132,7 @@ alias config="/usr/bin/git --git-dir=$HOME/.cfg/ --work-tree=$HOME"
 alias nvim-kickstart='NVIM_APPNAME="nvim-kickstart" nvim'
 alias nvim-lazy='NVIM_APPNAME="nvim-lazyvim" nvim'
 alias nvim='NVIM_APPNAME="nvim-lazyvim" nvim'
+alias claudeyolo='claude --dangerously-skip-permissions'
 
 export FLATPAK_HOME="$HOME/.local/share/flatpak/exports/"
 export PATH="$FLATPAK_HOME/bin:$PATH"

@@ -142,3 +142,5 @@ export PATH="$VOLTA_HOME/bin:$PATH"
 
 export PATH="$HOME/.local/bin:$PATH"
 alias config='/usr/bin/git --git-dir=/home/agentsmith/.cfg/ --work-tree=/home/agentsmith'
+
+eval "$(/home/linuxbrew/.linuxbrew/bin/brew shellenv zsh)"

@@ -19,8 +19,14 @@ This is the quickest way to get set up. It will:
 - attempt `config checkout`
 - if there are conflicts, back them up and retry checkout
 
+#### SSH bootstrap
 ```bash
 bash -c "$(curl -fsSL https://raw.githubusercontent.com/ralphsmith80/dotfiles/master/script/bootstrap.sh)"
+```
+
+#### HTTPS bootstrap
+```bash
+bash -c "$(curl -fsSL https://raw.githubusercontent.com/ralphsmith80/dotfiles/master/script/bootstrap-https.sh)"
 ```
 
 After it finishes, add the alias to your shell config (e.g. `~/.zshrc`):
@@ -36,7 +42,7 @@ source ~/.zshrc
 ```
 
 Notes:
-- This bootstrap uses the SSH URL (`git@github.com:...`), so your machine must have
+- The SSH bootstrap uses the SSH URL (`git@github.com:...`), so your machine must have
   GitHub SSH keys configured.
 
 ---

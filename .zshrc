@@ -98,6 +98,11 @@ plugins=(
 
 source $ZSH/oh-my-zsh.sh
 
+# Override prompt to include hostname
+PROMPT='
+%{$fg_bold[cyan]%}%m%{$reset_color%} %{$fg_bold[green]%}%~%{$reset_color%}$(git_prompt_info)$(virtualenv_prompt_info) ⌚ %{$fg_bold[red]%}%*%{$reset_color%}
+$ '
+
 # User configuration
 
 # export MANPATH="/usr/local/man:$MANPATH"
@@ -107,11 +112,12 @@ source $ZSH/oh-my-zsh.sh
 # export LANG=en_US.UTF-8
 
 # Preferred editor for local and remote sessions
-# if [[ -n $SSH_CONNECTION ]]; then
-#   export EDITOR='vim'  
-# else
-#   export EDITOR='nvim'
-# fi
+if [[ -n $SSH_CONNECTION ]]; then
+  export EDITOR='vim'
+else
+  export EDITOR='nvim'
+fi
+export SUDO_EDITOR='/home/linuxbrew/.linuxbrew/bin/nvim'
 
 # Compilation flags
 # export ARCHFLAGS="-arch $(uname -m)"

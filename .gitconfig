@@ -49,3 +49,5 @@
 [user]
     name = Ralph Smith
     email = devralph@fastmail.com
+[init]
+	defaultBranch = main

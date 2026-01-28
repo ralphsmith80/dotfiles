@@ -150,3 +150,26 @@ export PATH="$HOME/.local/bin:$PATH"
 alias config='/usr/bin/git --git-dir=/home/agentsmith/.cfg/ --work-tree=/home/agentsmith'
 
 eval "$(/home/linuxbrew/.linuxbrew/bin/brew shellenv zsh)"
+
+# Save current directory for Cosmic Terminal
+# This allows new terminal windows/tabs to open in the same directory
+COSMIC_CWD_FILE="$HOME/.cosmic_terminal_cwd"
+
+# Function to save current directory
+save_cwd() {
+    if [[ -n "$PWD" ]]; then
+        echo "$PWD" > "$COSMIC_CWD_FILE"
+    fi
+}
+
+# Restore directory when starting a new shell (if file exists)
+if [[ -f "$COSMIC_CWD_FILE" ]]; then
+    SAVED_CWD=$(cat "$COSMIC_CWD_FILE" 2>/dev/null)
+    if [[ -n "$SAVED_CWD" && -d "$SAVED_CWD" ]]; then
+        cd "$SAVED_CWD" 2>/dev/null
+    fi
+fi
+
+# Save directory on each prompt (using precmd hook)
+autoload -Uz add-zsh-hook
+add-zsh-hook precmd save_cwd

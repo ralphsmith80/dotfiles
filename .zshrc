@@ -82,6 +82,7 @@ plugins=(
   # pipx install virtualenv # for virtualenv
   virtualenv
   # virtualenvwrapper
+  # curl https://get.volta.sh | bash
   volta
   # zsh-autosuggestions
   # git clone https://github.com/zsh-users/zsh-autosuggestions "$ZSH_CUSTOM/plugins/zsh-autosuggestions"

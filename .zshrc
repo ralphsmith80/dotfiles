@@ -113,7 +113,7 @@ export SUDO_EDITOR='/home/linuxbrew/.linuxbrew/bin/nvim'
 # alias zshconfig="mate ~/.zshrc"
 # alias ohmyzsh="mate ~/.oh-my-zsh"
 
-alias config="/usr/bin/git --git-dir=$HOME/.cfg/ --work-tree=$HOME"
+alias config="git --git-dir=\$HOME/.cfg/ --work-tree=\$HOME"
 alias nvim-kickstart='NVIM_APPNAME="nvim-kickstart" nvim'
 alias nvim-lazy='NVIM_APPNAME="nvim-lazyvim" nvim'
 alias nvim='NVIM_APPNAME="nvim-lazyvim" nvim'
@@ -126,7 +126,7 @@ export VOLTA_HOME="$HOME/.volta"
 export PATH="$VOLTA_HOME/bin:$PATH"
 
 export PATH="$HOME/.local/bin:$PATH"
-alias config='/usr/bin/git --git-dir=/home/agentsmith/.cfg/ --work-tree=/home/agentsmith'
+# Duplicate removed — using $HOME version above
 
 eval "$(/home/linuxbrew/.linuxbrew/bin/brew shellenv zsh)"
 

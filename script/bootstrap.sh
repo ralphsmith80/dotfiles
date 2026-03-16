@@ -132,44 +132,7 @@ else
 fi
 
 # =============================================================================
-# 4. ZSH Custom Plugins (from ~/.zsh-plugins — single source of truth)
-# =============================================================================
-info "Installing ZSH custom plugins..."
-
-ZSH_CUSTOM="${ZSH_CUSTOM:-$HOME/.oh-my-zsh/custom}"
-PLUGINS_FILE="$HOME/.zsh-plugins"
-
-if [[ -f "$PLUGINS_FILE" ]]; then
-  while IFS= read -r line; do
-    [[ -z "$line" || "$line" == \#* ]] && continue
-    # Parse: plugin-name  [clone-url]  [system-deps...]
-    read -r name url deps <<< "$line"
-    [[ -z "$url" ]] && continue  # built-in plugin, no clone needed
-
-    target="$ZSH_CUSTOM/plugins/$name"
-    if [[ ! -d "$target" ]]; then
-      info "  Installing plugin: $name"
-      git clone --depth 1 "$url" "$target" 2>/dev/null || warn "  Failed to clone $name"
-    else
-      info "  Plugin already installed: $name"
-    fi
-
-    # Install system deps if specified
-    if [[ -n "${deps:-}" ]]; then
-      for dep in $deps; do
-        if ! has "$dep"; then
-          info "  Installing dependency: $dep"
-          brew install "$dep" 2>/dev/null || pkg_install "$dep"
-        fi
-      done
-    fi
-  done < "$PLUGINS_FILE"
-else
-  warn "No ~/.zsh-plugins file found — skipping custom plugin install"
-fi
-
-# =============================================================================
-# 5. Brew packages
+# 4. Brew packages (moved before dotfiles checkout — no file deps)
 # =============================================================================
 info "Installing brew packages..."
 
@@ -200,7 +163,7 @@ case "$OS" in
 esac
 
 # =============================================================================
-# 6. Volta (Node version manager)
+# 5. Volta (Node version manager)
 # =============================================================================
 if [[ ! -d "$HOME/.volta" ]]; then
   info "Installing Volta..."
@@ -229,7 +192,7 @@ if ! has pnpm; then
 fi
 
 # =============================================================================
-# 7. Set default shell to zsh
+# 6. Set default shell to zsh
 # =============================================================================
 if [[ "$SHELL" != *"zsh"* ]]; then
   info "Setting default shell to zsh..."
@@ -239,7 +202,7 @@ if [[ "$SHELL" != *"zsh"* ]]; then
 fi
 
 # =============================================================================
-# 8. Dotfiles checkout (bare repo)
+# 7. Dotfiles checkout (bare repo)
 # =============================================================================
 config() {
   git --git-dir="$GIT_DIR" --work-tree="$WORK_TREE" "$@"
@@ -284,6 +247,44 @@ if ! config checkout 2>/dev/null; then
 fi
 
 info "Dotfiles checked out"
+
+# =============================================================================
+# 8. ZSH Custom Plugins (from ~/.zsh-plugins — single source of truth)
+#    Runs AFTER dotfiles checkout so the file exists
+# =============================================================================
+info "Installing ZSH custom plugins..."
+
+ZSH_CUSTOM="${ZSH_CUSTOM:-$HOME/.oh-my-zsh/custom}"
+PLUGINS_FILE="$HOME/.zsh-plugins"
+
+if [[ -f "$PLUGINS_FILE" ]]; then
+  while IFS= read -r line; do
+    [[ -z "$line" || "$line" == \#* ]] && continue
+    # Parse: plugin-name  [clone-url]  [system-deps...]
+    read -r name url deps <<< "$line"
+    [[ -z "$url" ]] && continue  # built-in plugin, no clone needed
+
+    target="$ZSH_CUSTOM/plugins/$name"
+    if [[ ! -d "$target" ]]; then
+      info "  Installing plugin: $name"
+      git clone --depth 1 "$url" "$target" 2>/dev/null || warn "  Failed to clone $name"
+    else
+      info "  Plugin already installed: $name"
+    fi
+
+    # Install system deps if specified
+    if [[ -n "${deps:-}" ]]; then
+      for dep in $deps; do
+        if ! has "$dep"; then
+          info "  Installing dependency: $dep"
+          brew install "$dep" 2>/dev/null || pkg_install "$dep"
+        fi
+      done
+    fi
+  done < "$PLUGINS_FILE"
+else
+  warn "No ~/.zsh-plugins file found — skipping custom plugin install"
+fi
 
 # =============================================================================
 # 9. Neovim config

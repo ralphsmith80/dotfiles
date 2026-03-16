@@ -12,6 +12,8 @@
     # usage: `git update-from <remote> <branch-name>`
     # example: `git update-from origin master`
     update-from = "!f() { git fetch $1 --prune; git merge --ff-only $1/$2 || git rebase --preserve-merges $1/$2; }; f"
+    fp = fetch --prune
+    bclean = "!f() { DEFAULT=$(git symbolic-ref refs/remotes/origin/HEAD | sed 's@^refs/remotes/origin/@@'); git branch --merged ${1-$DEFAULT} | grep -v \" ${1-$DEFAULT}$\" | xargs -r git branch -d; }; f"
     # http://stackoverflow.com/questions/17195861/undo-git-update-index-assume-unchanged-file
     # to leave the file in the repo but ignore future changes to it:
     # git update-index --assume-unchanged <file>
@@ -45,6 +47,13 @@
 
 [push]
     default = current
+    autoSetupRemote = true
+
+[pull]
+    rebase = true
+
+[fetch]
+    prune = true
 
 [user]
     name = Ralph Smith

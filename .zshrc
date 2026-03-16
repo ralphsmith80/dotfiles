@@ -152,3 +152,8 @@ fi
 # Save directory on each prompt (using precmd hook)
 autoload -Uz add-zsh-hook
 add-zsh-hook precmd save_cwd
+
+# Worktrunk (git worktree manager) shell completions
+if command -v wt &> /dev/null; then
+  eval "$(wt shell-init zsh)"
+fi

@@ -65,37 +65,15 @@ ZSH_THEME="amuse"
 # Would you like to use another custom folder than $ZSH/custom?
 # ZSH_CUSTOM=/path/to/new-custom-folder
 
-# Which plugins would you like to load?
-# Standard plugins can be found in $ZSH/plugins/
-# Custom plugins may be added to $ZSH_CUSTOM/plugins/
-# Example format: plugins=(rails git textmate ruby lighthouse)
-# Add wisely, as too many plugins slow down shell startup.
-plugins=(
-  # autoswitch_virtualenv (Python virtualenv auto-activation)
-  # git clone https://github.com/MichaelAquilina/zsh-autoswitch-virtualenv "$ZSH_CUSTOM/plugins/autoswitch_virtualenv"
-  autoswitch_virtualenv
-  # sudo apt install xclip xsel # for copyfile
-  copyfile
-  git
-  # sudo apt install pipx # for pipx
-  # pipx ensurepath
-  # pipx install virtualenv # for virtualenv
-  virtualenv
-  # virtualenvwrapper
-  # curl https://get.volta.sh | bash
-  volta
-  # zsh-autosuggestions
-  # git clone https://github.com/zsh-users/zsh-autosuggestions "$ZSH_CUSTOM/plugins/zsh-autosuggestions"
-  zsh-autosuggestions
-  # zsh-syntax-highlighting
-  # git clone https://github.com/zsh-users/zsh-syntax-highlighting "$ZSH_CUSTOM/plugins/zsh-syntax-highlighting"
-  zsh-syntax-highlighting
-  history-substring-search
-  # zsh-bat (adds 'bat' aliases/functionality)
-  # git clone https://github.com/fdellwing/zsh-bat "$ZSH_CUSTOM/plugins/zsh-bat"
-  # sudo apt install bat # for zsh-bat
-  zsh-bat
-)
+# Plugins loaded from ~/.zsh-plugins (single source of truth)
+# Add/remove plugins there — bootstrap.sh auto-installs custom ones
+plugins=()
+if [[ -f "$HOME/.zsh-plugins" ]]; then
+  while IFS= read -r line; do
+    [[ -z "$line" || "$line" == \#* ]] && continue
+    plugins+=("${line%% *}")
+  done < "$HOME/.zsh-plugins"
+fi
 
 source $ZSH/oh-my-zsh.sh
 

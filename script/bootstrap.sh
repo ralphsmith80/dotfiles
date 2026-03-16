@@ -217,7 +217,7 @@ fi
 # Install default Node if not present
 if ! has node; then
   info "Installing Node via Volta..."
-  volta install node@24
+  volta install node
   info "Node $(node --version) installed"
 fi
 

@@ -132,30 +132,41 @@ else
 fi
 
 # =============================================================================
-# 4. ZSH Custom Plugins (auto-detect from .zshrc)
+# 4. ZSH Custom Plugins (from ~/.zsh-plugins — single source of truth)
 # =============================================================================
 info "Installing ZSH custom plugins..."
 
 ZSH_CUSTOM="${ZSH_CUSTOM:-$HOME/.oh-my-zsh/custom}"
+PLUGINS_FILE="$HOME/.zsh-plugins"
 
-# Map of plugin name → git clone URL
-# Add new plugins here and they'll auto-install
-declare -A PLUGIN_REPOS=(
-  [zsh-autosuggestions]="https://github.com/zsh-users/zsh-autosuggestions"
-  [zsh-syntax-highlighting]="https://github.com/zsh-users/zsh-syntax-highlighting"
-  [zsh-bat]="https://github.com/fdellwing/zsh-bat"
-  [autoswitch_virtualenv]="https://github.com/MichaelAquilina/zsh-autoswitch-virtualenv"
-)
+if [[ -f "$PLUGINS_FILE" ]]; then
+  while IFS= read -r line; do
+    [[ -z "$line" || "$line" == \#* ]] && continue
+    # Parse: plugin-name  [clone-url]  [system-deps...]
+    read -r name url deps <<< "$line"
+    [[ -z "$url" ]] && continue  # built-in plugin, no clone needed
 
-for plugin in "${!PLUGIN_REPOS[@]}"; do
-  target="$ZSH_CUSTOM/plugins/$plugin"
-  if [[ ! -d "$target" ]]; then
-    info "  Installing plugin: $plugin"
-    git clone --depth 1 "${PLUGIN_REPOS[$plugin]}" "$target" 2>/dev/null || warn "  Failed to clone $plugin"
-  else
-    info "  Plugin already installed: $plugin"
-  fi
-done
+    target="$ZSH_CUSTOM/plugins/$name"
+    if [[ ! -d "$target" ]]; then
+      info "  Installing plugin: $name"
+      git clone --depth 1 "$url" "$target" 2>/dev/null || warn "  Failed to clone $name"
+    else
+      info "  Plugin already installed: $name"
+    fi
+
+    # Install system deps if specified
+    if [[ -n "${deps:-}" ]]; then
+      for dep in $deps; do
+        if ! has "$dep"; then
+          info "  Installing dependency: $dep"
+          brew install "$dep" 2>/dev/null || pkg_install "$dep"
+        fi
+      done
+    fi
+  done < "$PLUGINS_FILE"
+else
+  warn "No ~/.zsh-plugins file found — skipping custom plugin install"
+fi
 
 # =============================================================================
 # 5. Brew packages

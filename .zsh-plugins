@@ -1,0 +1,22 @@
+# ZSH Custom Plugins — single source of truth
+# Format: plugin-name  git-clone-url  [system-deps]
+#
+# - Plugins with a URL are cloned to $ZSH_CUSTOM/plugins/
+# - Plugins without a URL are built-in oh-my-zsh plugins (no clone needed)
+# - system-deps are space-separated packages installed via apt/dnf
+# - Lines starting with # are ignored
+#
+# Add new plugins here — bootstrap.sh installs them automatically
+
+# Built-in plugins (no URL needed)
+copyfile
+git
+virtualenv
+volta
+history-substring-search
+
+# Custom plugins (need git clone)
+autoswitch_virtualenv  https://github.com/MichaelAquilina/zsh-autoswitch-virtualenv
+zsh-autosuggestions    https://github.com/zsh-users/zsh-autosuggestions
+zsh-syntax-highlighting https://github.com/zsh-users/zsh-syntax-highlighting
+zsh-bat                https://github.com/fdellwing/zsh-bat               bat

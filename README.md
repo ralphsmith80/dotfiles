@@ -6,7 +6,7 @@ Personal dotfiles managed via bare git repo.
 
 ```bash
 # One-liner — installs everything and checks out dotfiles
-curl -fsSL https://raw.githubusercontent.com/ralphsmith80/dotfiles/main/script/bootstrap.sh | bash
+curl -fsSL https://raw.githubusercontent.com/ralphsmith80/dotfiles/master/script/bootstrap.sh | bash
 ```
 
 Or clone and run locally:

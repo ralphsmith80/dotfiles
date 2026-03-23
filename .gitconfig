@@ -13,7 +13,7 @@
     # example: `git update-from origin master`
     update-from = "!f() { git fetch $1 --prune; git merge --ff-only $1/$2 || git rebase --preserve-merges $1/$2; }; f"
     fp = fetch --prune
-    bclean = "!f() { DEFAULT=$(git symbolic-ref refs/remotes/origin/HEAD | sed 's@^refs/remotes/origin/@@'); git branch --merged ${1-$DEFAULT} | grep -v \" ${1-$DEFAULT}$\" | xargs -r git branch -d; }; f"
+    bclean = "!f() { DEFAULT=$(git symbolic-ref refs/remotes/origin/HEAD 2>/dev/null | sed \"s@^refs/remotes/origin/@@\"); BASE=${1:-${DEFAULT:-$(git show-ref --quiet refs/heads/main && printf main || printf master)}}; WORKTREE_BRANCHES=$(git worktree list --porcelain | sed -n \"s/^branch refs\\/heads\\///p\"); git for-each-ref --format=\"%(refname:short)\" --merged \"$BASE\" refs/heads | while IFS= read -r branch; do [ -n \"$branch\" ] || continue; [ \"$branch\" = \"$BASE\" ] && continue; if printf \"%s\\n\" \"$WORKTREE_BRANCHES\" | grep -Fxq \"$branch\"; then printf \"Skipping %s (checked out in a worktree)\\n\" \"$branch\" >&2; continue; fi; git branch -d \"$branch\" || true; done; }; f"
     # http://stackoverflow.com/questions/17195861/undo-git-update-index-assume-unchanged-file
     # to leave the file in the repo but ignore future changes to it:
     # git update-index --assume-unchanged <file>

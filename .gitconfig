@@ -59,4 +59,4 @@
     name = Ralph Smith
     email = devralph@fastmail.com
 [init]
-	defaultBranch = main
+    defaultBranch = main

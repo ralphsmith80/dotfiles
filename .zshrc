@@ -155,5 +155,5 @@ add-zsh-hook precmd save_cwd
 
 # Worktrunk (git worktree manager) shell completions
 if command -v wt &> /dev/null; then
-  eval "$(wt shell-init zsh)"
+  eval "$(wt config shell init zsh)"
 fi

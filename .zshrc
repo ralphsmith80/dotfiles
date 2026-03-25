@@ -122,8 +122,8 @@ alias claudeyolo='claude --dangerously-skip-permissions'
 export FLATPAK_HOME="$HOME/.local/share/flatpak/exports/"
 export PATH="$FLATPAK_HOME/bin:$PATH"
 
-export VOLTA_HOME="$HOME/.volta"
-export PATH="$VOLTA_HOME/bin:$PATH"
+# Volta PATH (and Cursor real-binary ordering) lives in ~/.zshenv — do not prepend $VOLTA_HOME/bin here
+# or interactive shells undo the fix after .zshenv runs.
 
 export PATH="$HOME/.local/bin:$PATH"
 # Duplicate removed — using $HOME version above

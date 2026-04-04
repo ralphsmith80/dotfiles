@@ -1,11 +1,18 @@
 export VOLTA_HOME="$HOME/.volta"
-# Cursor/VS Code + Volta: shims can resolve argv0 to the IDE AppImage (volta-cli/volta#2031).
+export PNPM_HOME="$HOME/.local/share/pnpm"
+case ":$PATH:" in
+	*":$PNPM_HOME:"*) ;;
+	*) export PATH="$PNPM_HOME:$PATH" ;;
+esac
+# AppImage IDE terminals + Volta: shims can resolve argv0 to the IDE AppImage (volta-cli/volta#2031).
 # Workspace terminal.integrated.env is not always applied (agent terminal, some profiles), so detect
 # the IDE from env that child shells inherit: VSCODE_IPC_HOOK, CURSOR_TRACE_ID, VSCODE_INJECTION, etc.
+# T3 Code currently only exposes APPIMAGE, so also match known editor AppImage names directly.
 # Opt out: export VOLTA_DISABLE_CURSOR_FIX=1
 _VOLTA_USE_REAL=0
+_VOLTA_APPIMAGE_BASENAME="${APPIMAGE##*/}"
 if [[ -z "${VOLTA_DISABLE_CURSOR_FIX:-}" ]]; then
-	if [[ -n "${VOLTA_USE_REAL_BINARIES:-}" || -n "${VSCODE_INJECTION:-}" || -n "${CURSOR_TRACE_ID:-}" || -n "${VSCODE_IPC_HOOK:-}" || "${TERM_PROGRAM:-}" == "vscode" ]]; then
+	if [[ -n "${VOLTA_USE_REAL_BINARIES:-}" || -n "${VSCODE_INJECTION:-}" || -n "${CURSOR_TRACE_ID:-}" || -n "${VSCODE_IPC_HOOK:-}" || "${TERM_PROGRAM:-}" == "vscode" || ${_VOLTA_APPIMAGE_BASENAME:-} == Cursor-*.AppImage || ${_VOLTA_APPIMAGE_BASENAME:-} == T3-Code-*.AppImage ]]; then
 		_VOLTA_USE_REAL=1
 	fi
 fi
@@ -23,4 +30,4 @@ if [[ "$_VOLTA_USE_REAL" -eq 1 ]]; then
 else
 	export PATH="${VOLTA_HOME}/bin:${PATH}"
 fi
-unset _VOLTA_USE_REAL
+unset _VOLTA_USE_REAL _VOLTA_APPIMAGE_BASENAME

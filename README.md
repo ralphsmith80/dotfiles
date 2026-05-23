@@ -31,9 +31,15 @@ The bootstrap script auto-detects your OS (Fedora, PopOS, Ubuntu/WSL2, macOS) an
 
 ## Adding plugins
 
-1. Add the plugin name to the `plugins=()` array in `.zshrc`
-2. Add the clone URL to `PLUGIN_REPOS` in `script/bootstrap.sh`
+1. Add the plugin name to `.zsh-plugins`
+2. Add a clone URL and any package dependencies on the same line
 3. Run `bootstrap.sh` again (idempotent — skips what's already installed)
+
+Example:
+
+```text
+zsh-bat  https://github.com/fdellwing/zsh-bat  bat
+```
 
 ## Managing dotfiles
 

@@ -65,6 +65,21 @@ ZSH_THEME="amuse"
 # Would you like to use another custom folder than $ZSH/custom?
 # ZSH_CUSTOM=/path/to/new-custom-folder
 
+# PATH setup must happen before Oh My Zsh loads plugins so plugins can find
+# Homebrew tools such as bat.
+export FLATPAK_HOME="$HOME/.local/share/flatpak/exports/"
+export PATH="$FLATPAK_HOME/bin:$PATH"
+export PATH="$HOME/.local/bin:$PATH"
+if [[ -x /home/linuxbrew/.linuxbrew/bin/brew ]]; then
+  eval "$(/home/linuxbrew/.linuxbrew/bin/brew shellenv zsh)"
+elif [[ -x /opt/homebrew/bin/brew ]]; then
+  eval "$(/opt/homebrew/bin/brew shellenv zsh)"
+elif [[ -x /usr/local/bin/brew ]]; then
+  eval "$(/usr/local/bin/brew shellenv zsh)"
+elif command -v brew >/dev/null 2>&1; then
+  eval "$(brew shellenv zsh)"
+fi
+
 # Plugins loaded from ~/.zsh-plugins (single source of truth)
 # Add/remove plugins there — bootstrap.sh auto-installs custom ones
 plugins=()
@@ -119,16 +134,8 @@ alias nvim-lazy='NVIM_APPNAME="nvim-lazyvim" nvim'
 alias nvim='NVIM_APPNAME="nvim-lazyvim" nvim'
 alias claudeyolo='claude --dangerously-skip-permissions'
 
-export FLATPAK_HOME="$HOME/.local/share/flatpak/exports/"
-export PATH="$FLATPAK_HOME/bin:$PATH"
-
 # Volta PATH (and Cursor real-binary ordering) lives in ~/.zshenv — do not prepend $VOLTA_HOME/bin here
 # or interactive shells undo the fix after .zshenv runs.
-
-export PATH="$HOME/.local/bin:$PATH"
-# Duplicate removed — using $HOME version above
-
-eval "$(/home/linuxbrew/.linuxbrew/bin/brew shellenv zsh)"
 
 # Worktrunk (git worktree manager) shell completions
 if command -v wt &> /dev/null; then

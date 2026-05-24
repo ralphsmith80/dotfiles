@@ -11,12 +11,10 @@
 # Built-in plugins (no URL needed)
 copyfile
 git
-virtualenv
 volta
 history-substring-search
 
 # Custom plugins (need git clone)
-autoswitch_virtualenv  https://github.com/MichaelAquilina/zsh-autoswitch-virtualenv
 zsh-autosuggestions    https://github.com/zsh-users/zsh-autosuggestions
 zsh-syntax-highlighting https://github.com/zsh-users/zsh-syntax-highlighting
 zsh-bat                https://github.com/fdellwing/zsh-bat               bat

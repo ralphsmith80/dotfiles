@@ -15,6 +15,7 @@ set -euo pipefail
 
 REPO_SSH="git@github.com:ralphsmith80/dotfiles.git"
 REPO_HTTPS="https://github.com/ralphsmith80/dotfiles.git"
+BOOTSTRAP_BRANCH="${BOOTSTRAP_BRANCH:-feat/fedora-bootstrap}"
 GIT_DIR="$HOME/.cfg"
 WORK_TREE="$HOME"
 BACKUP_DIR="$HOME/.dotfiles-backup/$(date +%Y%m%d-%H%M%S)"
@@ -83,29 +84,35 @@ command -v git >/dev/null 2>&1 || { error "git missing after prereq install"; ex
 
 # --- Phase 1: clone dotfiles bare repo + checkout ----------------------------
 step "Phase 1: clone dotfiles + checkout into \$HOME"
+info "Using dotfiles branch: $BOOTSTRAP_BRANCH"
 
 config() { git --git-dir="$GIT_DIR" --work-tree="$WORK_TREE" "$@"; }
 
 if [[ ! -d "$GIT_DIR" ]]; then
-  if git clone --bare "$REPO_SSH" "$GIT_DIR" 2>/dev/null; then
+  if git clone --bare --branch "$BOOTSTRAP_BRANCH" "$REPO_SSH" "$GIT_DIR" 2>/dev/null; then
     info "cloned via SSH"
   else
     warn "SSH clone failed; falling back to HTTPS"
-    git clone --bare "$REPO_HTTPS" "$GIT_DIR"
+    git clone --bare --branch "$BOOTSTRAP_BRANCH" "$REPO_HTTPS" "$GIT_DIR"
     info "cloned via HTTPS"
   fi
 else
   info "dotfiles repo already exists at $GIT_DIR (skipping clone)"
 fi
 
+if ! config rev-parse --verify --quiet "refs/heads/$BOOTSTRAP_BRANCH" >/dev/null; then
+  info "fetching branch $BOOTSTRAP_BRANCH"
+  config fetch origin "refs/heads/$BOOTSTRAP_BRANCH:refs/heads/$BOOTSTRAP_BRANCH"
+fi
+
 config config --local status.showUntrackedFiles no
 
-if ! config checkout 2>/dev/null; then
+if ! config checkout "$BOOTSTRAP_BRANCH" 2>/dev/null; then
   warn "checkout conflict — backing up clashing files to: $BACKUP_DIR"
   mkdir -p "$BACKUP_DIR"
-  files="$(config checkout 2>&1 | sed -n 's/^[[:space:]]\{1,\}\(.*\)$/\1/p' || true)"
+  files="$(config checkout "$BOOTSTRAP_BRANCH" 2>&1 | sed -n 's/^[[:space:]]\{1,\}\(.*\)$/\1/p' || true)"
   if [[ -z "${files}" ]]; then
-    error "could not parse conflicting files. Try: config checkout"
+    error "could not parse conflicting files. Try: config checkout $BOOTSTRAP_BRANCH"
     exit 1
   fi
   while IFS= read -r f; do
@@ -113,7 +120,7 @@ if ! config checkout 2>/dev/null; then
     mkdir -p "$BACKUP_DIR/$(dirname "$f")"
     mv -f "$HOME/$f" "$BACKUP_DIR/$f"
   done <<<"$files"
-  config checkout
+  config checkout "$BOOTSTRAP_BRANCH"
 fi
 info "dotfiles checked out"
 

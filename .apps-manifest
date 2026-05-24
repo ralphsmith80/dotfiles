@@ -36,6 +36,7 @@ brew:rclone
 brew:fzf
 brew:zoxide
 brew:eza
+brew:uv
 brew:gemini-cli
 brew:codex
 

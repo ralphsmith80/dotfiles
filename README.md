@@ -1,6 +1,6 @@
 # Dotfiles
 
-Personal dotfiles managed via bare git repo.
+Personal dotfiles + cross-distro Linux bootstrap, managed via bare git repo.
 
 ## Quick Start (new machine)
 
@@ -16,30 +16,65 @@ git clone https://github.com/ralphsmith80/dotfiles.git /tmp/dotfiles
 bash /tmp/dotfiles/script/bootstrap.sh
 ```
 
-## What it installs
+## Architecture
 
-The bootstrap script auto-detects your OS (Fedora, PopOS, Ubuntu/WSL2, macOS) and installs:
+Bootstrap runs in two phases:
 
-| Component | Details |
-|-----------|---------|
-| **Homebrew** | Package manager (creates `/home/linuxbrew` on Linux) |
-| **Oh My Zsh** | ZSH framework + amuse theme |
-| **ZSH Plugins** | autosuggestions, syntax-highlighting, bat, autoswitch_virtualenv |
-| **Brew packages** | bat, neovim, gh, worktrunk |
-| **Volta** | Node version manager (installs Node 24 + pnpm) |
-| **Neovim** | LazyVim config at `~/.config/nvim-lazyvim` |
+| Phase | File(s) | Job |
+|-------|---------|-----|
+| **1** | `script/bootstrap.sh` (this file, self-contained) | Detect OS, install `git`/`curl`, clone the bare repo, check out into `$HOME` |
+| **2** | `script/[0-9][0-9]-*.sh` (numbered phase scripts) | Run in order, each sourcing helpers from `script/lib/` |
 
-## Adding plugins
+Phase 2 scripts:
 
-1. Add the plugin name to `.zsh-plugins`
-2. Add a clone URL and any package dependencies on the same line
-3. Run `bootstrap.sh` again (idempotent — skips what's already installed)
+| # | Script | What it does |
+|---|--------|--------------|
+| 00 | `00-prereqs.sh` | RPMFusion, Flathub, Homebrew |
+| 10 | `10-system.sh` | System packages (`sys:` entries in `.apps-manifest`) — dnf or rpm-ostree |
+| 15 | `15-volta.sh` | Volta + default Node + pnpm |
+| 20 | `20-brew.sh` | Homebrew formulae (`brew:` entries) |
+| 30 | `30-flatpak.sh` | Flatpak apps (`flatpak:` entries) |
+| 40 | `40-direct.sh` | Bespoke installers — 1Password, Cursor, etc. (`direct:` entries) |
+| 50 | `50-shell.sh` | Oh My Zsh, custom plugins from `.zsh-plugins`, default shell |
+| 60 | `60-cursor-extensions.sh` | Cursor extensions from `.cursor-extensions-manifest` |
+| 99 | `99-post.sh` | rclone Google Drive reconnect + mount, default browser, reboot prompt |
 
-Example:
+## Supported platforms
+
+- **Fedora Workstation** (default — `dnf` for system pkgs)
+- **Fedora Silverblue / Kinoite** (atomic — `rpm-ostree` layered installs, reboot at end)
+- **Fedora Cosmic spin** (same as Workstation under the hood)
+- **Pop!_OS / Ubuntu / WSL2** (partial — system pkgs are Fedora-targeted; brew/flatpak still work)
+- **macOS** (brew only)
+
+## Adding apps
+
+Edit `.apps-manifest`. One line per app:
+
+```
+sys:ghostty                       # dnf or rpm-ostree
+brew:lazygit                      # homebrew formula
+flatpak:com.discordapp.Discord    # flathub
+direct:cursor                     # custom installer in script/40-direct.sh
+```
+
+Re-run `bootstrap.sh` — idempotent, skips anything already installed.
+
+To add a brand-new direct installer, write an `install_<name>` function in `script/40-direct.sh` and reference `direct:<name>` from the manifest.
+
+## Adding zsh plugins
+
+Edit `.zsh-plugins`:
 
 ```text
 zsh-bat  https://github.com/fdellwing/zsh-bat  bat
 ```
+
+Re-run `bootstrap.sh`.
+
+## Adding Cursor extensions
+
+Edit `.cursor-extensions-manifest` (one extension ID per line) and re-run.
 
 ## Managing dotfiles
 
@@ -50,9 +85,28 @@ config commit -m "update"  # commit
 config push                # push to GitHub
 ```
 
-## Supported platforms
+## Environment variables
 
-- **Fedora** (desktop & server)
-- **Pop!_OS**
-- **Ubuntu** (native & WSL2)
-- **macOS** (Intel & Apple Silicon)
+| Var | Default | Effect |
+|-----|---------|--------|
+| `BOOTSTRAP_SKIP_RCLONE` | `0` | Set to `1` to skip rclone Google Drive setup in `99-post.sh` (useful in VMs) |
+
+## Layout
+
+```
+~/                                    # dotfiles working tree (.cfg = bare repo)
+├── .apps-manifest                    # source-of-truth: what to install
+├── .cursor-extensions-manifest       # Cursor extensions
+├── .zsh-plugins                      # zsh plugin list
+├── .zshrc / .zshenv / .gitconfig
+├── .claude/                          # Claude Code config
+├── .config/
+│   ├── nvim-lazyvim/                 # neovim config
+│   ├── rclone/rclone.conf.template   # rclone skeleton (no secrets)
+│   └── systemd/user/
+│       └── rclone-gdrive.service     # Google Drive mount unit
+└── script/
+    ├── bootstrap.sh                  # entrypoint
+    ├── lib/                          # log.sh, detect.sh, pkg.sh
+    └── [0-9][0-9]-*.sh               # numbered installer phases
+```

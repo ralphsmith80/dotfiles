@@ -1,0 +1,4 @@
+[google-drive]
+type = drive
+scope = drive
+team_drive =

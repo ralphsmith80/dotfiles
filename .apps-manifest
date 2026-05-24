@@ -1,0 +1,77 @@
+# Apps Manifest — single source of truth for bootstrap installs.
+# Format:  source:identifier
+#   sys:     system packages (dnf on Workstation/Cosmic spin; rpm-ostree layer on Silverblue)
+#   brew:    Homebrew formulae (identical install on all variants)
+#   flatpak: Flatpak apps from flathub (identical install on all Linux variants)
+#   direct:  bespoke installer (RPM repo, AppImage, GitHub release, etc.)
+# Lines starting with # are ignored. Section headers (=== Name ===) are decorative.
+
+# === System packages (Fedora-only) ============================================
+# Graphics / drivers
+sys:akmod-nvidia
+sys:xorg-x11-drv-nvidia-cuda
+sys:nvidia-container-toolkit
+
+# Containers (replaces docker — Podman is native on all Fedora variants)
+sys:podman
+sys:podman-compose
+
+# Terminal / networking
+sys:ghostty
+sys:tailscale
+
+# Build essentials (needed by brew formulae that compile)
+sys:gcc
+sys:make
+sys:pkgconf-pkg-config
+
+# === Homebrew (CLI dev tools) =================================================
+# Note: node + pnpm come from Volta in script/15-volta.sh — not from brew.
+brew:bat
+brew:ripgrep
+brew:neovim
+brew:gh
+brew:lazygit
+brew:rclone
+brew:fzf
+brew:zoxide
+brew:eza
+brew:gemini-cli
+brew:codex
+
+# === Flatpak (GUI apps from flathub) ==========================================
+# Browsers
+flatpak:app.zen_browser.zen
+flatpak:com.google.Chrome
+flatpak:com.microsoft.Edge
+
+# Comms
+flatpak:com.discordapp.Discord
+flatpak:org.telegram.desktop
+
+# Content / media
+flatpak:com.obsproject.Studio
+flatpak:com.spotify.Client
+flatpak:org.videolan.VLC
+
+# Productivity
+flatpak:com.fastmail.Fastmail
+flatpak:md.obsidian.Obsidian
+flatpak:com.getpostman.Postman
+
+# Creative
+flatpak:org.gimp.GIMP
+flatpak:org.inkscape.Inkscape
+
+# Gaming
+flatpak:com.valvesoftware.Steam
+
+# Privacy
+flatpak:com.protonvpn.www
+
+# === Direct installs (bespoke; handlers in script/40-direct.sh) ===============
+direct:1password
+direct:1password-cli
+direct:cursor
+# direct:t3code    # uncomment when ready — verify github release format first
+# direct:helium    # uncomment when ready — verify install method first

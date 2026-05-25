@@ -59,7 +59,16 @@ flatpak_install() {
   local app="$1"
   if ! flatpak_has "$app"; then
     log_info "  flatpak install $app"
-    flatpak install -y --user flathub "$app" || log_warn "  flatpak install $app failed"
+    local attempt
+    for attempt in 1 2 3; do
+      if flatpak install -y --noninteractive --user flathub "$app"; then
+        return 0
+      fi
+      [[ "$attempt" -lt 3 ]] || break
+      log_warn "  flatpak install $app failed (attempt $attempt/3); retrying"
+      sleep 5
+    done
+    log_warn "  flatpak install $app failed"
   else
     log_dim "  flatpak skip $app (installed)"
   fi

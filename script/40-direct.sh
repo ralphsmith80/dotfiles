@@ -54,6 +54,31 @@ install_1password_cli() {
   pkg_install 1password-cli
 }
 
+_setup_helium_repo() {
+  local fedora_ver repo_file repo_url
+  fedora_ver=$(rpm -E %fedora 2>/dev/null || echo "")
+  [[ -z "$fedora_ver" ]] && return 1
+  repo_file="/etc/yum.repos.d/_copr:copr.fedorainfracloud.org:imput:helium.repo"
+  repo_url="https://copr.fedorainfracloud.org/coprs/imput/helium/repo/fedora-${fedora_ver}/imput-helium-fedora-${fedora_ver}.repo"
+
+  [[ -f "$repo_file" ]] && return 0
+
+  log_info "  enabling Helium COPR"
+  curl -fsSL "$repo_url" | sudo tee "$repo_file" >/dev/null
+}
+
+install_helium() {
+  [[ "$OS" != "fedora" ]] && { log_warn "  helium installer: Fedora-only path"; return; }
+  if rpm -q helium-bin >/dev/null 2>&1; then
+    log_dim "  helium already installed"; return
+  fi
+  if _setup_helium_repo; then
+    pkg_install helium-bin
+  else
+    log_warn "  helium repo setup failed"
+  fi
+}
+
 # --- Cursor (AppImage) -------------------------------------------------------
 # Cursor distributes Linux as AppImage. We place it in ~/Applications, then
 # create a wrapper in ~/.local/bin and a .desktop entry so the cursor CLI works
@@ -109,12 +134,6 @@ EOF
 # Placeholder — fill in once the release artifact format is verified.
 install_t3code() {
   log_warn "  t3code installer not yet implemented — see https://github.com/pingdotgg/t3code/releases"
-}
-
-# --- Helium browser ----------------------------------------------------------
-# Placeholder — fill in once install method is verified at https://helium.computer
-install_helium() {
-  log_warn "  helium installer not yet implemented — see https://helium.computer"
 }
 
 # --- Dispatcher --------------------------------------------------------------

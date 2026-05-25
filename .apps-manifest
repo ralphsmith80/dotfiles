@@ -74,5 +74,5 @@ flatpak:com.protonvpn.www
 direct:1password
 direct:1password-cli
 direct:cursor
+direct:helium
 # direct:t3code    # uncomment when ready — verify github release format first
-# direct:helium    # uncomment when ready — verify install method first

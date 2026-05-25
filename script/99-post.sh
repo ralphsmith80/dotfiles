@@ -17,14 +17,22 @@ log_step "Phase 99: post-install"
 # rclone.conf may not exist yet; seed from template, then OAuth interactively.
 # Set BOOTSTRAP_SKIP_RCLONE=1 to bypass (e.g. when running in a Boxes VM).
 post_rclone_gdrive() {
-  if [[ "${BOOTSTRAP_SKIP_RCLONE:-0}" == "1" ]]; then
-    log_warn "  BOOTSTRAP_SKIP_RCLONE=1 — skipping rclone setup"
-    return
-  fi
-
   local rclone_conf="$HOME/.config/rclone/rclone.conf"
   local rclone_tmpl="$HOME/.config/rclone/rclone.conf.template"
   local unit="rclone-gdrive.service"
+
+  # Seed config from template if user hasn't reconnected yet
+  if [[ ! -f "$rclone_conf" && -f "$rclone_tmpl" ]]; then
+    log_info "  seeding rclone.conf from template"
+    mkdir -p "$(dirname "$rclone_conf")"
+    cp "$rclone_tmpl" "$rclone_conf"
+  fi
+
+  if [[ "${BOOTSTRAP_SKIP_RCLONE:-0}" == "1" ]]; then
+    log_warn "  BOOTSTRAP_SKIP_RCLONE=1 — skipping rclone OAuth"
+    log_warn "  run manually later: rclone config reconnect google-drive:"
+    return
+  fi
 
   if ! has rclone; then
     log_warn "  rclone not on PATH — skipping (was phase 20 successful?)"
@@ -33,13 +41,6 @@ post_rclone_gdrive() {
   if [[ ! -f "$HOME/.config/systemd/user/$unit" ]]; then
     log_warn "  $unit not present in dotfiles — skipping mount setup"
     return
-  fi
-
-  # Seed config from template if user hasn't reconnected yet
-  if [[ ! -f "$rclone_conf" && -f "$rclone_tmpl" ]]; then
-    log_info "  seeding rclone.conf from template"
-    mkdir -p "$(dirname "$rclone_conf")"
-    cp "$rclone_tmpl" "$rclone_conf"
   fi
 
   # If google-drive remote works, skip OAuth

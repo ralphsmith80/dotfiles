@@ -62,7 +62,13 @@ install_cursor() {
   local appimage="$APPS_DIR/Cursor.AppImage"
   local wrapper="$BIN_DIR/cursor"
   local desktop="$DESKTOP_DIR/cursor.desktop"
-  local url="https://downloader.cursor.sh/linux/appImage/x64"
+  local url
+
+  case "$(uname -m)" in
+    x86_64)  url="https://api2.cursor.sh/updates/download/golden/linux-x64/cursor/latest" ;;
+    aarch64|arm64) url="https://api2.cursor.sh/updates/download/golden/linux-arm64/cursor/latest" ;;
+    *) log_warn "  cursor installer: unsupported architecture $(uname -m)"; return ;;
+  esac
 
   if [[ -x "$appimage" ]]; then
     log_dim "  cursor AppImage already present (re-run: rm $appimage to refresh)"

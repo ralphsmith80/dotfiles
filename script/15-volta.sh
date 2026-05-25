@@ -20,16 +20,8 @@ fi
 export VOLTA_HOME="$HOME/.volta"
 export PATH="$VOLTA_HOME/bin:$PATH"
 
-if ! has node; then
-  log_info "  installing default node"
-  volta install node || log_warn "  volta install node failed"
-else
-  log_dim "  node $(node --version) already installed"
-fi
+log_info "  ensuring default node"
+volta install node || log_warn "  volta install node failed"
 
-if ! has pnpm; then
-  log_info "  installing pnpm"
-  volta install pnpm || log_warn "  volta install pnpm failed"
-else
-  log_dim "  pnpm already installed"
-fi
+log_info "  ensuring pnpm"
+volta install pnpm || log_warn "  volta install pnpm failed"

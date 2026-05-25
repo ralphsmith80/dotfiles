@@ -100,9 +100,11 @@ else
   info "dotfiles repo already exists at $GIT_DIR (skipping clone)"
 fi
 
+info "fetching latest $BOOTSTRAP_BRANCH"
+config fetch origin "refs/heads/$BOOTSTRAP_BRANCH:refs/remotes/origin/$BOOTSTRAP_BRANCH"
+
 if ! config rev-parse --verify --quiet "refs/heads/$BOOTSTRAP_BRANCH" >/dev/null; then
-  info "fetching branch $BOOTSTRAP_BRANCH"
-  config fetch origin "refs/heads/$BOOTSTRAP_BRANCH:refs/heads/$BOOTSTRAP_BRANCH"
+  config branch "$BOOTSTRAP_BRANCH" "refs/remotes/origin/$BOOTSTRAP_BRANCH"
 fi
 
 config config --local status.showUntrackedFiles no
@@ -123,6 +125,16 @@ if ! config checkout "$BOOTSTRAP_BRANCH" 2>/dev/null; then
   config checkout "$BOOTSTRAP_BRANCH"
 fi
 info "dotfiles checked out"
+
+if [[ "$(config rev-parse "refs/heads/$BOOTSTRAP_BRANCH")" != "$(config rev-parse "refs/remotes/origin/$BOOTSTRAP_BRANCH")" ]]; then
+  if config merge-base --is-ancestor "HEAD" "refs/remotes/origin/$BOOTSTRAP_BRANCH"; then
+    info "fast-forwarding local $BOOTSTRAP_BRANCH"
+    config merge --ff-only "refs/remotes/origin/$BOOTSTRAP_BRANCH"
+  else
+    error "local $BOOTSTRAP_BRANCH has diverged from origin/$BOOTSTRAP_BRANCH; resolve with: config status"
+    exit 1
+  fi
+fi
 
 # --- Phase 2: run numbered installer scripts ---------------------------------
 if [[ ! -d "$SCRIPT_DIR" || ! -f "$SCRIPT_DIR/lib/log.sh" ]]; then

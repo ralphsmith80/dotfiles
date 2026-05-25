@@ -38,6 +38,31 @@ setup_rpmfusion() {
   esac
 }
 
+setup_ghostty_copr() {
+  local fedora_ver repo_file repo_url
+  fedora_ver=$(rpm -E %fedora 2>/dev/null || echo "")
+  [[ -z "$fedora_ver" ]] && return
+  repo_file="/etc/yum.repos.d/_copr:copr.fedorainfracloud.org:scottames:ghostty.repo"
+  repo_url="https://copr.fedorainfracloud.org/coprs/scottames/ghostty/repo/fedora-${fedora_ver}/scottames-ghostty-fedora-${fedora_ver}.repo"
+
+  [[ -f "$repo_file" ]] && { log_dim "  Ghostty COPR already enabled"; return; }
+
+  log_info "  enabling Ghostty COPR"
+  curl -fsSL "$repo_url" | sudo tee "$repo_file" >/dev/null \
+    || log_warn "  Ghostty COPR enable failed"
+}
+
+setup_nvidia_container_toolkit_repo() {
+  local repo_file="/etc/yum.repos.d/nvidia-container-toolkit.repo"
+  local repo_url="https://nvidia.github.io/libnvidia-container/stable/rpm/nvidia-container-toolkit.repo"
+
+  [[ -f "$repo_file" ]] && { log_dim "  NVIDIA Container Toolkit repo already enabled"; return; }
+
+  log_info "  enabling NVIDIA Container Toolkit repo"
+  curl -fsSL "$repo_url" | sudo tee "$repo_file" >/dev/null \
+    || log_warn "  NVIDIA Container Toolkit repo enable failed"
+}
+
 # --- Flathub -----------------------------------------------------------------
 setup_flathub() {
   if ! command -v flatpak >/dev/null 2>&1; then
@@ -84,6 +109,8 @@ log_step "Phase 00: prerequisites"
 case "$OS" in
   fedora)
     setup_rpmfusion
+    setup_ghostty_copr
+    setup_nvidia_container_toolkit_repo
     setup_flathub
     setup_brew
     ;;

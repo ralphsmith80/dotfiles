@@ -67,6 +67,7 @@ if [[ "$SHELL" != *"zsh"* ]]; then
   log_info "  setting default shell to zsh"
   if has chsh; then
     chsh -s "$(command -v zsh)" 2>/dev/null \
+      || sudo chsh -s "$(command -v zsh)" "$USER" 2>/dev/null \
       || log_warn "  chsh failed — try: sudo chsh -s $(command -v zsh) $USER"
   fi
 fi

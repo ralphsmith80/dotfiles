@@ -64,6 +64,11 @@ _setup_helium_repo() {
   [[ -f "$repo_file" ]] && return 0
 
   log_info "  enabling Helium COPR"
+  if sudo dnf copr enable -y imput/helium; then
+    return 0
+  fi
+
+  log_warn "  dnf copr enable failed; falling back to repo file"
   curl -fsSL "$repo_url" | sudo tee "$repo_file" >/dev/null
 }
 

@@ -161,9 +161,61 @@ EOF
 }
 
 # --- t3code (GitHub releases) ------------------------------------------------
-# Placeholder — fill in once the release artifact format is verified.
 install_t3code() {
-  log_warn "  t3code installer not yet implemented — see https://github.com/pingdotgg/t3code/releases"
+  local appimage="$APPS_DIR/T3-Code.AppImage"
+  local wrapper="$BIN_DIR/t3code"
+  local desktop="$DESKTOP_DIR/t3code.desktop"
+  local api="https://api.github.com/repos/pingdotgg/t3code/releases/latest"
+  local asset_url
+
+  case "$(uname -m)" in
+    x86_64) ;;
+    *) log_warn "  t3code installer: unsupported architecture $(uname -m)"; return ;;
+  esac
+
+  asset_url=$(
+    curl -fsSL "$api" |
+      awk -F'"' '/"browser_download_url":/ && /T3-Code-.*-x86_64[.]AppImage"/ { print $4; exit }'
+  )
+
+  if [[ -z "$asset_url" ]]; then
+    log_warn "  t3code AppImage asset not found in latest release"
+    return
+  fi
+
+  if [[ -x "$appimage" ]]; then
+    log_dim "  t3code AppImage already present (re-run: rm $appimage to refresh)"
+  else
+    log_info "  downloading t3code AppImage"
+    if curl -fL "$asset_url" -o "$appimage"; then
+      chmod +x "$appimage"
+    else
+      log_warn "  t3code download failed"; return
+    fi
+  fi
+
+  if [[ ! -x "$wrapper" ]]; then
+    cat > "$wrapper" <<EOF
+#!/bin/sh
+exec "$appimage" --no-sandbox "\$@"
+EOF
+    chmod +x "$wrapper"
+  fi
+
+  if [[ ! -f "$desktop" ]]; then
+    cat > "$desktop" <<EOF
+[Desktop Entry]
+Name=T3 Code
+Comment=AI code editor
+Exec=$appimage --no-sandbox %U
+Icon=t3code
+Terminal=false
+Type=Application
+Categories=Development;IDE;
+StartupWMClass=T3 Code
+MimeType=text/plain;inode/directory;
+EOF
+  fi
 }
 
 # --- Dispatcher --------------------------------------------------------------

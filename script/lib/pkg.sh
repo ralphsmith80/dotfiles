@@ -61,7 +61,7 @@ flatpak_install() {
     log_info "  flatpak install $app"
     local attempt
     for attempt in 1 2 3; do
-      if flatpak install -y --noninteractive --user flathub "$app"; then
+      if flatpak install -y --noninteractive --user flathub "$app" </dev/null; then
         return 0
       fi
       [[ "$attempt" -lt 3 ]] || break

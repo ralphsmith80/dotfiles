@@ -24,7 +24,12 @@ if [[ ! -f "$MANIFEST" ]]; then
   exit 0
 fi
 
+apps=()
 while IFS= read -r app; do
   [[ -z "$app" ]] && continue
-  flatpak_install "$app"
+  apps+=("$app")
 done < <(parse_manifest "$MANIFEST" flatpak)
+
+for app in "${apps[@]}"; do
+  flatpak_install "$app"
+done

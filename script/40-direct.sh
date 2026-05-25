@@ -94,6 +94,31 @@ install_cursor() {
   local desktop="$DESKTOP_DIR/cursor.desktop"
   local url
 
+  if [[ "$OS" == "fedora" ]]; then
+    case "$(uname -m)" in
+      x86_64)  url="https://api2.cursor.sh/updates/download/golden/linux-x64-rpm/cursor/latest" ;;
+      aarch64|arm64) url="https://api2.cursor.sh/updates/download/golden/linux-arm64-rpm/cursor/latest" ;;
+      *) log_warn "  cursor installer: unsupported architecture $(uname -m)"; return ;;
+    esac
+
+    if rpm -q cursor >/dev/null 2>&1; then
+      log_dim "  cursor RPM already installed"
+    else
+      log_info "  installing cursor RPM"
+      sudo dnf install -y "$url" || log_warn "  cursor RPM install failed"
+    fi
+
+    # Remove the old AppImage shim created by earlier bootstrap runs so it does
+    # not shadow the RPM-provided cursor command.
+    if [[ -f "$wrapper" ]] && grep -q "$appimage" "$wrapper" 2>/dev/null; then
+      rm -f "$wrapper"
+    fi
+    if [[ -f "$desktop" ]] && grep -q "$appimage" "$desktop" 2>/dev/null; then
+      rm -f "$desktop"
+    fi
+    return
+  fi
+
   case "$(uname -m)" in
     x86_64)  url="https://api2.cursor.sh/updates/download/golden/linux-x64/cursor/latest" ;;
     aarch64|arm64) url="https://api2.cursor.sh/updates/download/golden/linux-arm64/cursor/latest" ;;

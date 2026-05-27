@@ -1,10 +1,19 @@
 # Apps Manifest — single source of truth for bootstrap installs.
 # Format:  source:identifier
-#   sys:     system packages (dnf on Workstation/Cosmic spin; rpm-ostree layer on Silverblue)
+#   pkg:     portable Linux system packages (apt/dnf/rpm-ostree)
+#   sys:     Fedora-only system packages (dnf on Workstation/Cosmic spin; rpm-ostree layer on Silverblue)
 #   brew:    Homebrew formulae (identical install on all variants)
 #   flatpak: Flatpak apps from flathub (identical install on all Linux variants)
 #   direct:  bespoke installer (RPM repo, AppImage, GitHub release, etc.)
 # Lines starting with # are ignored. Section headers (=== Name ===) are decorative.
+
+# === Portable Linux system packages ==========================================
+# Wayland-native capture helpers + Shutter as the editor/annotator.
+pkg:shutter
+pkg:grim
+pkg:slurp
+pkg:wl-clipboard
+pkg:gnome-screenshot
 
 # === System packages (Fedora-only) ============================================
 # Graphics / drivers

@@ -15,7 +15,7 @@ set -euo pipefail
 
 REPO_SSH="git@github.com:ralphsmith80/dotfiles.git"
 REPO_HTTPS="https://github.com/ralphsmith80/dotfiles.git"
-BOOTSTRAP_BRANCH="${BOOTSTRAP_BRANCH:-feat/fedora-bootstrap}"
+BOOTSTRAP_BRANCH="${BOOTSTRAP_BRANCH:-master}"
 GIT_DIR="$HOME/.cfg"
 WORK_TREE="$HOME"
 BACKUP_DIR="$HOME/.dotfiles-backup/$(date +%Y%m%d-%H%M%S)"
@@ -101,7 +101,10 @@ else
 fi
 
 info "fetching latest $BOOTSTRAP_BRANCH"
-config fetch origin "refs/heads/$BOOTSTRAP_BRANCH:refs/remotes/origin/$BOOTSTRAP_BRANCH"
+if ! config fetch origin "refs/heads/$BOOTSTRAP_BRANCH:refs/remotes/origin/$BOOTSTRAP_BRANCH"; then
+  warn "origin fetch failed; trying HTTPS"
+  config fetch "$REPO_HTTPS" "refs/heads/$BOOTSTRAP_BRANCH:refs/remotes/origin/$BOOTSTRAP_BRANCH"
+fi
 
 if ! config rev-parse --verify --quiet "refs/heads/$BOOTSTRAP_BRANCH" >/dev/null; then
   config branch "$BOOTSTRAP_BRANCH" "refs/remotes/origin/$BOOTSTRAP_BRANCH"

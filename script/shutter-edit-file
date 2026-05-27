@@ -1,0 +1,76 @@
+#!/usr/bin/env perl
+use strict;
+use warnings;
+use utf8;
+
+use File::Basename qw(fileparse);
+use File::stat;
+use Glib qw(TRUE FALSE);
+use Gtk3 '-init';
+use Gtk3::ImageView 10;
+
+use Shutter::App::Common;
+use Shutter::App::HelperFunctions;
+use Shutter::App::SimpleDialogs;
+use Shutter::Pixbuf::Load;
+use Shutter::Pixbuf::Save;
+use Shutter::Draw::DrawingTool;
+
+my $file = shift @ARGV;
+die "usage: shutter-edit-file <image>\n" unless defined $file && -r $file;
+
+my $log_file = $ENV{SHUTTER_CAPTURE_LOG};
+sub log_msg {
+  return unless defined $log_file && length $log_file;
+  if (open my $log, '>>', $log_file) {
+    print {$log} scalar(localtime) . " @_\n";
+    close $log;
+  }
+}
+
+my $mtime_before = stat($file)->mtime;
+
+my $root = '/usr';
+my $main_window = Gtk3::Window->new('toplevel');
+$main_window->set_default_size(1, 1);
+$main_window->set_skip_taskbar_hint(TRUE);
+$main_window->set_skip_pager_hint(TRUE);
+
+my $sc = Shutter::App::Common->new($root, $main_window, 'Shutter', '', '', $$);
+$sc->set_debug(FALSE);
+$sc->set_disable_systray(TRUE);
+
+my ($name, undef, $ext) = fileparse($file, qr/\.[^.]*/);
+$ext =~ s/^\.//;
+$ext = 'png' if $ext eq '';
+
+my $mime = "image/$ext";
+$mime = 'image/jpeg' if $ext eq 'jpg' || $ext eq 'jpeg';
+
+my %session = (
+  1 => {
+    long       => $file,
+    filetype   => $ext,
+    mime_type  => $mime,
+    name       => $name,
+    is_unsaved => FALSE,
+  },
+);
+
+my $drawing_tool = Shutter::Draw::DrawingTool->new($sc);
+$drawing_tool->show($file, $ext, $mime, $name, FALSE, \%session);
+
+my $mtime_after = stat($file)->mtime;
+if ($mtime_after != $mtime_before && $ENV{XDG_SESSION_TYPE} && $ENV{XDG_SESSION_TYPE} eq 'wayland') {
+  if (open my $wl, '|-', 'wl-copy', '--type', 'image/png') {
+    if (open my $img, '<', $file) {
+      binmode $img;
+      binmode $wl;
+      local $/;
+      print {$wl} <$img>;
+      close $img;
+    }
+    close $wl;
+    log_msg("copied edited image to clipboard: $file");
+  }
+}

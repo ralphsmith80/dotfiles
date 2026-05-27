@@ -1,7 +1,7 @@
 #!/usr/bin/env bash
-# Phase 10 — install system packages declared in ~/.apps-manifest (sys: entries).
-# On Fedora Workstation/Cosmic spin: uses dnf. On Silverblue: rpm-ostree (layered, reboot required).
-# On non-Fedora: skips with a notice.
+# Phase 10 — install system packages declared in ~/.apps-manifest.
+# pkg: entries are portable Linux packages installed with apt/dnf/rpm-ostree.
+# sys: entries are Fedora-only packages installed with dnf/rpm-ostree.
 
 set -uo pipefail
 # shellcheck disable=SC1091
@@ -15,24 +15,36 @@ MANIFEST="$HOME/.apps-manifest"
 
 log_step "Phase 10: system packages"
 
-if [[ "$OS" != "fedora" ]]; then
-  log_warn "Skipping sys: entries on non-Fedora OS ($OS)"
-  exit 0
-fi
-
 if [[ ! -f "$MANIFEST" ]]; then
   log_warn "No manifest at $MANIFEST — skipping"
   exit 0
 fi
 
 pkgs=()
-while IFS= read -r p; do
-  [[ -z "$p" ]] && continue
-  pkgs+=("$p")
-done < <(parse_manifest "$MANIFEST" sys)
+
+case "$OS" in
+  popos|ubuntu|fedora)
+    while IFS= read -r p; do
+      [[ -z "$p" ]] && continue
+      pkgs+=("$p")
+    done < <(parse_manifest "$MANIFEST" pkg)
+    ;;
+  *)
+    log_warn "Skipping pkg: entries on OS ($OS)"
+    ;;
+esac
+
+if [[ "$OS" == "fedora" ]]; then
+  while IFS= read -r p; do
+    [[ -z "$p" ]] && continue
+    pkgs+=("$p")
+  done < <(parse_manifest "$MANIFEST" sys)
+else
+  log_warn "Skipping sys: entries on non-Fedora OS ($OS)"
+fi
 
 if [[ ${#pkgs[@]} -eq 0 ]]; then
-  log_dim "  no sys: entries in manifest"
+  log_dim "  no system packages for this OS"
   exit 0
 fi
 

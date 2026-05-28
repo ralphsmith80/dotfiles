@@ -61,16 +61,21 @@ open_editor() {
 capture_wayland() {
   if [[ "${XDG_CURRENT_DESKTOP:-}" == *"COSMIC"* ]] && has cosmic-screenshot && has wl-paste; then
     log "capture: cosmic-screenshot+wl-paste"
+    has wl-copy && wl-copy --clear >/dev/null 2>&1 || true
     if cosmic-screenshot --interactive; then
-      sleep 0.2
-      if wl-paste --type image/png > "$file" && [[ -s "$file" ]]; then
-        log "saved: $file"
-        return 0
-      fi
+      local attempt
+      for attempt in {1..20}; do
+        if wl-paste --type image/png > "$file" && [[ -s "$file" ]]; then
+          log "saved: $file"
+          return 0
+        fi
+        sleep 0.1
+      done
       log "capture failed: clipboard did not contain image/png"
     else
       log "capture cancelled: cosmic-screenshot"
     fi
+    return 1
   fi
 
   if has grim && has slurp; then
@@ -97,6 +102,11 @@ if [[ "${XDG_SESSION_TYPE:-}" == "wayland" ]]; then
     copy_image "$file"
     open_editor "$file"
     exit 0
+  fi
+
+  if [[ "${XDG_CURRENT_DESKTOP:-}" == *"COSMIC"* ]]; then
+    log "capture failed: no COSMIC image available"
+    exit 1
   fi
 
   if has cosmic-screenshot; then

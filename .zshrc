@@ -70,15 +70,6 @@ ZSH_THEME="amuse"
 export FLATPAK_HOME="$HOME/.local/share/flatpak/exports/"
 export PATH="$FLATPAK_HOME/bin:$PATH"
 export PATH="$HOME/.local/bin:$PATH"
-if [[ -x /home/linuxbrew/.linuxbrew/bin/brew ]]; then
-  eval "$(/home/linuxbrew/.linuxbrew/bin/brew shellenv zsh)"
-elif [[ -x /opt/homebrew/bin/brew ]]; then
-  eval "$(/opt/homebrew/bin/brew shellenv zsh)"
-elif [[ -x /usr/local/bin/brew ]]; then
-  eval "$(/usr/local/bin/brew shellenv zsh)"
-elif command -v brew >/dev/null 2>&1; then
-  eval "$(brew shellenv zsh)"
-fi
 
 # Plugins loaded from ~/.zsh-plugins (single source of truth)
 # Add/remove plugins there — bootstrap.sh auto-installs custom ones

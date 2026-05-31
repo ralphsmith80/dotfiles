@@ -1,6 +1,7 @@
 #!/usr/bin/env bash
 # Phase 60 — install Cursor extensions from ~/.cursor-extensions-manifest.
-# Uses the cursor wrapper installed by 40-direct.sh (~/.local/bin/cursor).
+# Uses the cursor command installed by 40-direct.sh. Fedora installs the Cursor
+# RPM, while other Linux installs may use the ~/.local/bin/cursor AppImage shim.
 
 set -uo pipefail
 # shellcheck disable=SC1091
@@ -9,12 +10,22 @@ source "$HOME/script/lib/log.sh"
 source "$HOME/script/lib/pkg.sh"
 
 MANIFEST="$HOME/.cursor-extensions-manifest"
-CURSOR_BIN="$HOME/.local/bin/cursor"
+CURSOR_SHIM="$HOME/.local/bin/cursor"
 
 log_step "Phase 60: cursor extensions"
 
-if [[ ! -x "$CURSOR_BIN" ]]; then
-  log_warn "cursor wrapper not found at $CURSOR_BIN — did phase 40 install cursor?"
+resolve_cursor_bin() {
+  if [[ -x "$CURSOR_SHIM" ]]; then
+    echo "$CURSOR_SHIM"
+  elif command -v cursor >/dev/null 2>&1; then
+    command -v cursor
+  fi
+}
+
+CURSOR_BIN="$(resolve_cursor_bin)"
+
+if [[ -z "$CURSOR_BIN" ]]; then
+  log_warn "cursor command not found — did phase 40 install cursor?"
   exit 0
 fi
 

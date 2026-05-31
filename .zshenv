@@ -1,9 +1,28 @@
 export VOLTA_HOME="$HOME/.volta"
 export PNPM_HOME="$HOME/.local/share/pnpm"
+if [[ -x /usr/bin/zsh ]]; then
+  export SHELL="/usr/bin/zsh"
+elif command -v zsh >/dev/null 2>&1; then
+  export SHELL="$(command -v zsh)"
+fi
+
 case ":$PATH:" in
 	*":$PNPM_HOME:"*) ;;
 	*) export PATH="$PNPM_HOME:$PATH" ;;
 esac
+
+# Homebrew formulae are part of the bootstrap manifest, so expose them to
+# non-interactive zsh commands as well as interactive terminals.
+if [[ -x /home/linuxbrew/.linuxbrew/bin/brew ]]; then
+  eval "$(/home/linuxbrew/.linuxbrew/bin/brew shellenv zsh)"
+elif [[ -x /opt/homebrew/bin/brew ]]; then
+  eval "$(/opt/homebrew/bin/brew shellenv zsh)"
+elif [[ -x /usr/local/bin/brew ]]; then
+  eval "$(/usr/local/bin/brew shellenv zsh)"
+elif command -v brew >/dev/null 2>&1; then
+  eval "$(brew shellenv zsh)"
+fi
+
 # AppImage IDE terminals + Volta: shims can resolve argv0 to the IDE AppImage (volta-cli/volta#2031).
 # Workspace terminal.integrated.env is not always applied (agent terminal, some profiles), so detect
 # the IDE from env that child shells inherit: VSCODE_IPC_HOOK, CURSOR_TRACE_ID, VSCODE_INJECTION, etc.

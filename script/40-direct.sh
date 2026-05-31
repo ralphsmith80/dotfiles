@@ -84,6 +84,34 @@ install_helium() {
   fi
 }
 
+_has_libfuse2() {
+  if command -v ldconfig >/dev/null 2>&1 && ldconfig -p 2>/dev/null | grep -q 'libfuse[.]so[.]2'; then
+    return 0
+  fi
+  [[ -e /lib/libfuse.so.2 || -e /lib64/libfuse.so.2 || -e /usr/lib/libfuse.so.2 || -e /usr/lib64/libfuse.so.2 ]]
+}
+
+_ensure_appimage_fuse2() {
+  _has_libfuse2 && return 0
+
+  log_info "  installing AppImage FUSE compatibility library"
+  case "$OS" in
+    fedora)
+      pkg_install fuse-libs
+      ;;
+    popos|ubuntu|wsl2)
+      sudo apt-get install -y libfuse2 2>/dev/null \
+        || sudo apt-get install -y libfuse2t64 2>/dev/null \
+        || log_warn "  install libfuse2 failed"
+      ;;
+    *)
+      log_warn "  AppImage may not launch: libfuse.so.2 not found"
+      ;;
+  esac
+
+  _has_libfuse2 || log_warn "  libfuse.so.2 still not found; AppImage launch may require a reboot or manual package install"
+}
+
 # --- Cursor (AppImage) -------------------------------------------------------
 # Cursor distributes Linux as AppImage. We place it in ~/Applications, then
 # create a wrapper in ~/.local/bin and a .desktop entry so the cursor CLI works
@@ -118,6 +146,8 @@ install_cursor() {
     fi
     return
   fi
+
+  _ensure_appimage_fuse2
 
   case "$(uname -m)" in
     x86_64)  url="https://api2.cursor.sh/updates/download/golden/linux-x64/cursor/latest" ;;
@@ -165,6 +195,8 @@ install_t3code() {
   local appimage="$APPS_DIR/T3-Code.AppImage"
   local wrapper="$BIN_DIR/t3code"
   local desktop="$DESKTOP_DIR/t3code.desktop"
+  local icon_dir="$HOME/.local/share/icons/hicolor/1024x1024/apps"
+  local icon="$icon_dir/t3code.png"
   local api="https://api.github.com/repos/pingdotgg/t3code/releases/latest"
   local asset_url
 
@@ -172,6 +204,8 @@ install_t3code() {
     x86_64) ;;
     *) log_warn "  t3code installer: unsupported architecture $(uname -m)"; return ;;
   esac
+
+  _ensure_appimage_fuse2
 
   asset_url=$(
     curl -fsSL "$api" |
@@ -194,28 +228,40 @@ install_t3code() {
     fi
   fi
 
-  if [[ ! -x "$wrapper" ]]; then
-    cat > "$wrapper" <<EOF
+  log_info "  installing t3code launcher"
+  cat > "$wrapper" <<EOF
 #!/bin/sh
 exec "$appimage" --no-sandbox "\$@"
 EOF
-    chmod +x "$wrapper"
-  fi
+  chmod +x "$wrapper"
 
-  if [[ ! -f "$desktop" ]]; then
-    cat > "$desktop" <<EOF
+  log_info "  installing t3code icon"
+  local tmp extract_icon
+  tmp=$(mktemp -d)
+  if (
+    cd "$tmp" &&
+      "$appimage" --appimage-extract usr/share/icons/hicolor/1024x1024/apps/t3code.png >/dev/null 2>&1
+  ); then
+    extract_icon="$tmp/squashfs-root/usr/share/icons/hicolor/1024x1024/apps/t3code.png"
+    mkdir -p "$icon_dir"
+    cp "$extract_icon" "$icon"
+  else
+    log_warn "  t3code icon extraction failed"
+  fi
+  rm -rf "$tmp"
+
+  cat > "$desktop" <<EOF
 [Desktop Entry]
-Name=T3 Code
-Comment=AI code editor
+Name=T3 Code (Alpha)
+Comment=T3 Code desktop build
 Exec=$appimage --no-sandbox %U
 Icon=t3code
 Terminal=false
 Type=Application
-Categories=Development;IDE;
-StartupWMClass=T3 Code
+Categories=Development;
+StartupWMClass=t3code
 MimeType=text/plain;inode/directory;
 EOF
-  fi
 }
 
 # --- Dispatcher --------------------------------------------------------------

@@ -7,6 +7,10 @@ elif command -v zsh >/dev/null 2>&1; then
 fi
 
 case ":$PATH:" in
+	*":$PNPM_HOME/bin:"*) ;;
+	*) export PATH="$PNPM_HOME/bin:$PATH" ;;
+esac
+case ":$PATH:" in
 	*":$PNPM_HOME:"*) ;;
 	*) export PATH="$PNPM_HOME:$PATH" ;;
 esac

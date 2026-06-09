@@ -34,8 +34,9 @@ fi
 # Opt out: export VOLTA_DISABLE_CURSOR_FIX=1
 _VOLTA_USE_REAL=0
 _VOLTA_APPIMAGE_BASENAME="${APPIMAGE##*/}"
+_VOLTA_ARG0_BASENAME="${0##*/}"
 if [[ -z "${VOLTA_DISABLE_CURSOR_FIX:-}" ]]; then
-	if [[ -n "${VOLTA_USE_REAL_BINARIES:-}" || -n "${VSCODE_INJECTION:-}" || -n "${CURSOR_TRACE_ID:-}" || -n "${VSCODE_IPC_HOOK:-}" || "${TERM_PROGRAM:-}" == "vscode" || ${_VOLTA_APPIMAGE_BASENAME:-} == Cursor-*.AppImage || ${_VOLTA_APPIMAGE_BASENAME:-} == T3-Code-*.AppImage ]]; then
+	if [[ -n "${VOLTA_USE_REAL_BINARIES:-}" || -n "${VSCODE_INJECTION:-}" || -n "${CURSOR_TRACE_ID:-}" || -n "${VSCODE_IPC_HOOK:-}" || "${TERM_PROGRAM:-}" == "vscode" || ${_VOLTA_APPIMAGE_BASENAME:-} == Cursor*.AppImage || ${_VOLTA_APPIMAGE_BASENAME:-} == T3-Code*.AppImage || ${_VOLTA_ARG0_BASENAME:-} == Cursor*.AppImage || ${_VOLTA_ARG0_BASENAME:-} == T3-Code*.AppImage ]]; then
 		_VOLTA_USE_REAL=1
 	fi
 fi
@@ -53,4 +54,4 @@ if [[ "$_VOLTA_USE_REAL" -eq 1 ]]; then
 else
 	export PATH="${VOLTA_HOME}/bin:${PATH}"
 fi
-unset _VOLTA_USE_REAL _VOLTA_APPIMAGE_BASENAME
+unset _VOLTA_USE_REAL _VOLTA_APPIMAGE_BASENAME _VOLTA_ARG0_BASENAME

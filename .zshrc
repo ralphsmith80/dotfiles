@@ -69,7 +69,10 @@ ZSH_THEME="amuse"
 # Homebrew tools such as bat.
 export FLATPAK_HOME="$HOME/.local/share/flatpak/exports/"
 export PATH="$FLATPAK_HOME/bin:$PATH"
-export PATH="$HOME/.local/bin:$PATH"
+case ":$PATH:" in
+  *":$HOME/.local/bin:"*) ;;
+  *) export PATH="$PATH:$HOME/.local/bin" ;;
+esac
 
 # Plugins loaded from ~/.zsh-plugins (single source of truth)
 # Add/remove plugins there — bootstrap.sh auto-installs custom ones

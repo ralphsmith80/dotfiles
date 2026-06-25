@@ -266,6 +266,47 @@ EOF
   rm -rf "$tmp"
 }
 
+# --- Codex CLI (native standalone installer) ---------------------------------
+# OpenAI's native installer downloads the platform-specific standalone binary
+# into ~/.codex and exposes ~/.local/bin/codex. That path works across Linux,
+# macOS, and WSL2 without depending on Homebrew or Node/npm global packages.
+_cleanup_homebrew_codex() {
+  has brew || return 0
+
+  if brew list --cask codex >/dev/null 2>&1; then
+    log_info "  removing Homebrew Codex cask"
+    brew uninstall --cask codex || log_warn "  brew uninstall --cask codex failed"
+  fi
+
+  if brew list codex >/dev/null 2>&1; then
+    log_info "  removing Homebrew Codex formula"
+    brew uninstall codex || log_warn "  brew uninstall codex failed"
+  fi
+}
+
+install_codex() {
+  local installer="https://chatgpt.com/codex/install.sh"
+
+  case "$OS" in
+    fedora|popos|ubuntu|wsl2|macos) ;;
+    *) log_warn "  codex installer: unsupported OS $OS"; return ;;
+  esac
+
+  case "$(uname -m)" in
+    x86_64|amd64|aarch64|arm64) ;;
+    *) log_warn "  codex installer: unsupported architecture $(uname -m)"; return ;;
+  esac
+
+  _cleanup_homebrew_codex
+
+  log_info "  installing Codex CLI via native standalone installer"
+  if curl -fsSL "$installer" | CODEX_NON_INTERACTIVE=1 sh; then
+    log_dim "  codex native installer completed"
+  else
+    log_warn "  codex native installer failed"
+  fi
+}
+
 # --- Dispatcher --------------------------------------------------------------
 log_step "Phase 40: direct installs"
 
@@ -282,6 +323,7 @@ while IFS= read -r item; do
     cursor)        install_cursor ;;
     t3code)        install_t3code ;;
     helium)        install_helium ;;
+    codex)         install_codex ;;
     *)             log_warn "  unknown direct: $item — add a handler in 40-direct.sh" ;;
   esac
 done < <(parse_manifest "$MANIFEST" direct)

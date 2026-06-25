@@ -13,19 +13,6 @@ MANIFEST="$HOME/.apps-manifest"
 
 log_step "Phase 20: brew packages"
 
-cleanup_legacy_codex_standalone() {
-  local shim="$HOME/.local/bin/codex"
-  local target
-
-  [[ -L "$shim" ]] || return 0
-  target="$(readlink -f "$shim" 2>/dev/null || true)"
-  [[ "$target" == "$HOME/.codex/packages/standalone/"* ]] || return 0
-  brew list codex >/dev/null 2>&1 || return 0
-
-  rm -f "$shim"
-  log_info "  removed legacy Codex standalone shim"
-}
-
 if ! has brew; then
   if [[ -x /home/linuxbrew/.linuxbrew/bin/brew ]]; then
     eval "$(/home/linuxbrew/.linuxbrew/bin/brew shellenv)"
@@ -47,5 +34,4 @@ fi
 while IFS= read -r p; do
   [[ -z "$p" ]] && continue
   brew_install "$p"
-  [[ "$p" == "codex" ]] && cleanup_legacy_codex_standalone
 done < <(parse_manifest "$MANIFEST" brew)

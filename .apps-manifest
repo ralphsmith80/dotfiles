@@ -47,8 +47,6 @@ brew:zoxide
 brew:eza
 brew:uv
 brew:gemini-cli
-# Keep Codex managed by Brew; remove stale standalone ~/.local shims in script/20-brew.sh.
-brew:codex
 
 # === Flatpak (GUI apps from flathub) ==========================================
 # Browsers
@@ -86,3 +84,5 @@ direct:1password-cli
 direct:cursor
 direct:helium
 direct:t3code
+# OpenAI's native standalone installer works on Linux, macOS, and WSL2.
+direct:codex

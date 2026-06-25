@@ -7,6 +7,9 @@ Personal dotfiles + cross-distro Linux bootstrap, managed via bare git repo.
 ```bash
 # One-liner — installs everything and checks out dotfiles
 curl -fsSL https://raw.githubusercontent.com/ralphsmith80/dotfiles/master/script/bootstrap.sh | bash
+
+# Zsh-only — checks out dotfiles, then installs zsh/Oh My Zsh/plugins only
+curl -fsSL https://raw.githubusercontent.com/ralphsmith80/dotfiles/master/script/bootstrap.sh | bash -s -- --zsh-only
 ```
 
 Or clone and run locally:
@@ -89,6 +92,7 @@ config push                # push to GitHub
 
 | Var | Default | Effect |
 |-----|---------|--------|
+| `BOOTSTRAP_ZSH_ONLY` | `0` | Set to `1` to run only the zsh shell phase after checkout |
 | `BOOTSTRAP_SKIP_RCLONE` | `0` | Set to `1` to skip rclone Google Drive setup in `99-post.sh` (useful in VMs) |
 
 ## Layout

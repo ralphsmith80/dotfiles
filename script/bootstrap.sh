@@ -9,6 +9,8 @@
 #
 # Quick start (any fresh machine):
 #   curl -fsSL https://raw.githubusercontent.com/ralphsmith80/dotfiles/master/script/bootstrap.sh | bash
+# Zsh-only:
+#   curl -fsSL https://raw.githubusercontent.com/ralphsmith80/dotfiles/master/script/bootstrap.sh | bash -s -- --zsh-only
 # =============================================================================
 
 set -euo pipefail
@@ -20,6 +22,7 @@ GIT_DIR="$HOME/.cfg"
 WORK_TREE="$HOME"
 BACKUP_DIR="$HOME/.dotfiles-backup/$(date +%Y%m%d-%H%M%S)"
 SCRIPT_DIR="$HOME/script"
+BOOTSTRAP_ZSH_ONLY="${BOOTSTRAP_ZSH_ONLY:-0}"
 
 # --- inline log helpers (phase 1 has no source deps) -------------------------
 if [[ -t 1 ]]; then
@@ -31,6 +34,46 @@ info()  { printf '%b[\xe2\x9c\x93]%b %s\n' "$C_G" "$C_N" "$*"; }
 warn()  { printf '%b[!]%b %s\n' "$C_Y" "$C_N" "$*"; }
 error() { printf '%b[\xe2\x9c\x97]%b %s\n' "$C_R" "$C_N" "$*" >&2; }
 step()  { printf '\n%b==>%b %s\n' "$C_B" "$C_N" "$*"; }
+
+usage() {
+  cat <<'EOF'
+Usage: bootstrap.sh [--zsh-only]
+
+Options:
+  --zsh-only    Check out dotfiles, then install only zsh/Oh My Zsh/plugins.
+  -h, --help    Show this help.
+
+Environment:
+  BOOTSTRAP_ZSH_ONLY=1    Same as --zsh-only.
+EOF
+}
+
+while [[ $# -gt 0 ]]; do
+  case "$1" in
+    --zsh-only)
+      BOOTSTRAP_ZSH_ONLY=1
+      ;;
+    -h|--help)
+      usage
+      exit 0
+      ;;
+    *)
+      error "unknown option: $1"
+      usage >&2
+      exit 2
+      ;;
+  esac
+  shift
+done
+
+case "$BOOTSTRAP_ZSH_ONLY" in
+  1|true|TRUE|yes|YES) BOOTSTRAP_ZSH_ONLY=1 ;;
+  0|false|FALSE|no|NO|'') BOOTSTRAP_ZSH_ONLY=0 ;;
+  *)
+    error "BOOTSTRAP_ZSH_ONLY must be 0 or 1"
+    exit 2
+    ;;
+esac
 
 # --- minimal OS detect (phase 1 only) ----------------------------------------
 detect_os_min() {
@@ -149,6 +192,24 @@ cd "$HOME"
 shopt -s nullglob
 phase_scripts=("$SCRIPT_DIR"/[0-9][0-9]-*.sh)
 shopt -u nullglob
+
+if [[ "$BOOTSTRAP_ZSH_ONLY" == "1" ]]; then
+  shell_phase="$SCRIPT_DIR/50-shell.sh"
+  if [[ ! -f "$shell_phase" ]]; then
+    error "zsh-only mode requested but $(basename "$shell_phase") is missing"
+    exit 1
+  fi
+
+  step "Phase 2: zsh-only mode"
+  info "→ $(basename "$shell_phase")"
+  if ! bash "$shell_phase"; then
+    warn "$(basename "$shell_phase") exited non-zero"
+    exit 1
+  fi
+
+  step "Zsh-only install done"
+  exit 0
+fi
 
 if [[ ${#phase_scripts[@]} -eq 0 ]]; then
   warn "no phase scripts found — done"

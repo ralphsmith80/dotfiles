@@ -48,7 +48,7 @@ open_editor() {
 
   if [[ -x "$HOME/script/shutter-edit-file" ]]; then
     log "open: shutter-edit-file $image"
-    SHUTTER_CAPTURE_LOG="$log_file" nohup "$HOME/script/shutter-edit-file" "$image" >> "$log_file" 2>&1 &
+    nohup env SHUTTER_CAPTURE_LOG="$log_file" "$HOME/script/shutter-edit-file" "$image" >> "$log_file" 2>&1 &
   elif has shutter; then
     log "open: shutter --disable_systray $image"
     nohup shutter --disable_systray "$image" >> "$log_file" 2>&1 &
@@ -59,18 +59,53 @@ open_editor() {
 }
 
 capture_wayland() {
-  if [[ "${XDG_CURRENT_DESKTOP:-}" == *"COSMIC"* ]] && has cosmic-screenshot && has wl-paste; then
-    log "capture: cosmic-screenshot+wl-paste"
+  if [[ "${XDG_CURRENT_DESKTOP:-}" == *"COSMIC"* ]] && has cosmic-screenshot; then
+    local marker
+    marker="$log_dir/shutter-wayland-capture.$timestamp.marker"
+    : > "$marker"
+
+    log "capture: cosmic-screenshot"
+    has wl-copy && wl-copy --clear >/dev/null 2>&1 || true
     if cosmic-screenshot --interactive; then
-      sleep 0.2
-      if wl-paste --type image/png > "$file" && [[ -s "$file" ]]; then
-        log "saved: $file"
-        return 0
+      local attempt candidate entry latest
+      if has wl-paste; then
+        for ((attempt = 1; attempt <= 20; attempt++)); do
+          if wl-paste --type image/png > "$file" && [[ -s "$file" ]]; then
+            log "saved from clipboard: $file"
+            rm -f "$marker"
+            return 0
+          fi
+          sleep 0.1
+        done
+        log "capture: clipboard did not contain image/png"
       fi
-      log "capture failed: clipboard did not contain image/png"
+
+      for ((attempt = 1; attempt <= 20; attempt++)); do
+        latest=""
+        while IFS= read -r -d '' entry; do
+          candidate="${entry#* }"
+          [[ "$candidate" != "$file" && -s "$candidate" ]] || continue
+          if ! has file || [[ "$(file --mime-type -b "$candidate")" == "image/png" ]]; then
+            latest="$candidate"
+            break
+          fi
+        done < <(find "$screenshots_dir" -maxdepth 1 -type f -newer "$marker" -printf '%T@ %p\0' 2>/dev/null | sort -z -rn)
+
+        if [[ -n "$latest" ]]; then
+          cp "$latest" "$file"
+          log "saved: $file"
+          rm -f "$marker"
+          return 0
+        fi
+        sleep 0.1
+      done
+      log "capture failed: no saved COSMIC screenshot found"
     else
       log "capture cancelled: cosmic-screenshot"
     fi
+    [[ ! -s "$file" ]] && rm -f "$file"
+    rm -f "$marker"
+    return 1
   fi
 
   if has grim && has slurp; then
@@ -97,6 +132,11 @@ if [[ "${XDG_SESSION_TYPE:-}" == "wayland" ]]; then
     copy_image "$file"
     open_editor "$file"
     exit 0
+  fi
+
+  if [[ "${XDG_CURRENT_DESKTOP:-}" == *"COSMIC"* ]]; then
+    log "capture failed: no COSMIC image available"
+    exit 1
   fi
 
   if has cosmic-screenshot; then

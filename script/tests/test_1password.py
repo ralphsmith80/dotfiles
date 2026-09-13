@@ -70,6 +70,18 @@ class SharedCredentialsTest(unittest.TestCase):
         self.assertNotEqual(self.setup_credentials().returncode, 0)
         self.assertEqual(self.loader.read_text(), "custom loader\n")
 
+    def test_active_profile_does_not_hide_default_or_sibling_profiles(self):
+        for root in [self.home / ".hermes", self.home / "custom-hermes"]:
+            with self.subTest(root=root.name):
+                active = root / "profiles/a"
+                sibling = root / "profiles/b"
+                active.mkdir(parents=True)
+                sibling.mkdir()
+                self.env["HERMES_HOME"] = str(active) + "/"
+                self.assertEqual(self.setup_credentials().returncode, 0)
+                for profile in [root, active, sibling]:
+                    self.assertEqual((profile / ".op.env").resolve(), self.canonical)
+
     def test_earlier_qa_loader_is_migrated(self):
         self.loader.parent.mkdir(parents=True)
         self.loader.symlink_to(self.home / "Workspace/qa-skills/scripts/with-1password")

@@ -32,6 +32,12 @@ fi
 ln -sfn "$script_dir/with-1password" "$loader"
 
 hermes_home="${HERMES_HOME:-$HOME/.hermes}"
+# Hermes sets HERMES_HOME to the active profile when launched with --profile.
+hermes_home="${hermes_home%/}"
+hermes_parent="$(dirname "$hermes_home")"
+if [[ "${hermes_parent##*/}" == profiles ]]; then
+  hermes_home="$(dirname "$hermes_parent")"
+fi
 shopt -s nullglob
 for profile in "$hermes_home" "$hermes_home"/profiles/*; do
   [[ -d "$profile" ]] || continue

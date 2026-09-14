@@ -1,0 +1,2 @@
+# Patch context lines deliberately start with a space before upstream tabs.
+omarchy/hy3.patch -whitespace

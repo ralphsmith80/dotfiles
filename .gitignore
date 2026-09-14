@@ -1,2 +1,7 @@
 # Service account credentials stay on each machine.
 /.1password/
+
+# Local Omarchy builds and private restore backups.
+/omarchy/.build/
+/.dotfiles-backup/
+**/__pycache__/

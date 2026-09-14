@@ -1,6 +1,6 @@
 # Personal Omarchy changes
 
-This directory saves four configuration files and the custom tiling patch.
+This directory saves three configuration files and the custom tiling patch.
 The existing cross-platform bootstrap stays unchanged. This separate command
 requires Python 3.9 or newer and skips systems without Lua-configured Omarchy.
 
@@ -9,7 +9,6 @@ requires Python 3.9 or newer and skips systems without Lua-configured Omarchy.
 | `config/hypr/dotfiles.lua` | Equal tiling, directional movement, keypad workspaces, and Right Alt dictation. |
 | `config/hypr/monitors.lua` | Samsung G95NC at 7680x2160, 240 Hz, scale 1.2. Only with `--with-hardware`. |
 | `config/voxtype/config.toml` | Push-to-talk through Hyprland, using the `base.en` model. |
-| `config/wireplumber/wireplumber.conf.d/bluetooth-a2dp-autoconnect.conf` | Connect Bluetooth A2DP audio profiles automatically. |
 
 From a normal clone of this repository on an installed Omarchy system:
 
@@ -30,7 +29,7 @@ Build output stays in the ignored `.build` directory. Rebuild after Hyprland upd
 Apply preserves the existing main Hyprland configuration and adds one module load
 before saved layout settings. It replaces the earlier `hypr.equal-tiling` load if
 present. Existing monitor settings remain unless `--with-hardware` is supplied.
-The other three override files are installed as complete files.
+The other two override files are installed as complete files.
 
 Identical files are skipped. Changed files are backed up under
 `~/.dotfiles-backup/restore-*`, with original permissions. Later local edits stop

@@ -13,7 +13,7 @@ python3 script/omarchy.py          # Preview
 python3 script/omarchy.py --apply
 ```
 
-See [the small Omarchy setup](omarchy/README.md) for the four configuration files,
+See [the small Omarchy setup](omarchy/README.md) for the three configuration files,
 required tiling patch, backups, and optional monitor settings.
 
 ## Quick Start (new machine)

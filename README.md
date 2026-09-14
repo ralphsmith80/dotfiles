@@ -38,6 +38,7 @@ Phase 2 scripts:
 | 20 | `20-brew.sh` | Homebrew formulae (`brew:` entries) |
 | 30 | `30-flatpak.sh` | Flatpak apps (`flatpak:` entries) |
 | 40 | `40-direct.sh` | Bespoke installers — 1Password, Cursor, etc. (`direct:` entries) |
+| 45 | `45-1password-env.sh` | Shared 1Password loader, local credential permissions, and Hermes links |
 | 50 | `50-shell.sh` | Oh My Zsh, custom plugins from `.zsh-plugins`, default shell |
 | 60 | `60-cursor-extensions.sh` | Cursor extensions from `.cursor-extensions-manifest` |
 | 99 | `99-post.sh` | rclone Google Drive reconnect + mount, default browser, reboot prompt |
@@ -87,6 +88,32 @@ config add .zshrc          # stage a file
 config commit -m "update"  # commit
 config push                # push to GitHub
 ```
+
+## Agent access to 1Password
+
+Keep one local `OP_SERVICE_ACCOUNT_TOKEN=...` assignment in
+`~/.1password/.env`. The directory must have permission `700` and the file
+`600`. The root `.gitignore` excludes the credential directory. Provision the
+token separately on each machine; bootstrap never copies or creates a token.
+
+Run `bash ~/script/45-1password-env.sh` after provisioning or adding a Hermes
+profile. It installs `~/.local/bin/with-1password` and links existing Hermes
+profiles' `.op.env` files to the canonical file. It preserves existing credential
+files and refuses to replace unrelated loaders or `.op.env` files. It does not
+restart services. Hermes must support loading `.op.env`.
+
+```bash
+~/.local/bin/with-1password op user get --me >/dev/null
+```
+
+The loader passes the token to the requested command without exporting it to the
+parent shell. An existing `OP_SERVICE_ACCOUNT_TOKEN` in the environment takes
+precedence. Shared agent instructions belong in the QA skills repository's
+`AGENTS.md`.
+
+For a legacy Hermes installation, verify authentication through the shared file
+before removing its duplicate `OP_SERVICE_ACCOUNT_TOKEN` assignments from
+agent-specific `.env` files. Bootstrap leaves these files unchanged.
 
 ## Environment variables
 

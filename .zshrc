@@ -78,7 +78,7 @@ if [[ -f "$HOME/.zsh-plugins" ]]; then
 fi
 
 # Oh My Zsh handles both current and older fzf shell integrations.
-if command -v fzf >/dev/null 2>&1; then
+if [[ -o zle && -t 0 ]] && command -v fzf >/dev/null 2>&1; then
   plugins+=(fzf)
 fi
 source "$ZSH/oh-my-zsh.sh"

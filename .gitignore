@@ -5,3 +5,8 @@
 /omarchy/.build/
 /.dotfiles-backup/
 **/__pycache__/
+
+# Each account owns these overrides.
+/.zshenv.local
+/.zshrc.local
+/.gitconfig.local

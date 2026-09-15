@@ -78,9 +78,11 @@ Keep future account edits there. Existing settings appended to a known shared
 Zsh file move into its local file. Git identity and changes from the last known
 Git config move into `.gitconfig.local`. With no known Git baseline, all existing
 Git settings are retained locally. Existing local files are preserved; conflicting
-Git values, edits inside shared Zsh code, and unknown changes to other managed
+Git values, extra Git includes, edits inside shared Zsh code, and unknown changes to other managed
 files stop the update before any config file is changed. Move such edits into a
-local file or reconcile them in the source clone, then preview again.
+local file or reconcile them in the source clone, then preview again. Keep Git
+`include` and `includeIf` rules in `.gitconfig.local` so migration does not change
+their order or create recursive includes.
 
 A fresh account must set its own Git identity:
 
@@ -90,7 +92,8 @@ git config --file ~/.gitconfig.local user.email "you@example.com"
 ```
 
 Backups are under `~/.local/state/dotfiles-shell/backups/`. The apply command
-also keeps the last shared files there for the next migration. It serializes
+keeps the last shared files in `~/.local/state/dotfiles-shell/shared/` for the
+next migration. It serializes
 concurrent applies and rolls back completed writes if a later write fails.
 A second apply with the same source makes no changes. Keep the source clone's
 Git history when moving it to another host so legacy shell versions can be
@@ -180,7 +183,7 @@ Edit `.zsh-plugins`:
 zsh-bat  https://github.com/fdellwing/zsh-bat  bat
 ```
 
-Re-run `bootstrap.sh`.
+Run the focused apply command, then `bash ~/script/50-shell.sh`.
 
 ## Adding Cursor extensions
 
@@ -188,12 +191,18 @@ Edit `.cursor-extensions-manifest` (one extension ID per line) and re-run.
 
 ## Managing dotfiles
 
+Edit shared files in the normal source clone and use its usual Git workflow:
+
 ```bash
-config status              # check what changed
-config add .zshrc          # stage a file
-config commit -m "update"  # commit
-config push                # push to GitHub
+cd ~/dotfiles-source
+git switch -c feat/my-shell-change
+git add .zshrc
+git commit -m "feat: update shared shell defaults"
+git push -u origin HEAD
 ```
+
+The `config` alias still works for inspecting a legacy bare repository. Use
+`.local` files for account changes and the focused apply command for deployment.
 
 ## Agent access to 1Password
 

@@ -64,6 +64,10 @@ def config_values(data):
 
 def migrate_git(current, base, shared, local):
     actual, previous, defaults, overrides = map(config_values, (current, base, shared, local))
+    # Includes can override earlier settings. Do not reorder or recursively copy them.
+    for key, values in actual.items():
+        if key.startswith('includeif.') or (key == 'include.path' and values != ['~/.gitconfig.local']):
+            raise ValueError('Move Git includes from .gitconfig into .gitconfig.local before applying')
     for key in previous.keys() - actual.keys():
         if key in defaults and key != 'include.path':
             raise ValueError(f'.gitconfig removes shared setting {key}; resolve this before applying')
@@ -71,8 +75,6 @@ def migrate_git(current, base, shared, local):
                  if (key.startswith('user.') or values != previous.get(key))
                  and not (key == 'include.path' and values == ['~/.gitconfig.local'])}
     with tempfile.NamedTemporaryFile() as file:
-        file.write(local)
-        file.flush()
         for key, values in additions.items():
             if key in overrides:
                 if overrides[key] != values:
@@ -82,7 +84,8 @@ def migrate_git(current, base, shared, local):
                 result = git('config', '--file', file.name, '--add', '--', key, value)
                 if result.returncode:
                     raise ValueError(f'Cannot preserve Git setting: {key}')
-        return Path(file.name).read_bytes()
+        migrated = Path(file.name).read_bytes()
+        return migrated + local
 
 
 def prepare(home):

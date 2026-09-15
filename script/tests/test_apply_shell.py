@@ -71,6 +71,20 @@ class ApplyShellTest(unittest.TestCase):
         with self.assertRaisesRegex(ValueError, 'removes shared setting'):
             shell.migrate_git(b'', b'[pull]\nrebase=true\n', b'[pull]\nrebase=true\n', b'')
 
+    def test_extra_git_include_stops_before_creating_recursive_local_include(self):
+        shell.apply(self.home, shell.prepare(self.home))
+        self.write('.workgit', b'[user]\nname=Work\n')
+        path = self.home / '.gitconfig'
+        path.write_bytes(path.read_bytes() + b'\n[include]\npath=~/.workgit\n')
+        before = path.read_bytes()
+        with self.assertRaisesRegex(ValueError, 'Move Git includes'):
+            shell.prepare(self.home)
+        self.assertEqual(path.read_bytes(), before)
+        result = subprocess.run(['git', 'config', '--global', '--includes', '--get', 'user.name'],
+                                env={**os.environ, 'HOME': str(self.home), 'GIT_CONFIG_GLOBAL': str(path)},
+                                capture_output=True, text=True, check=True)
+        self.assertEqual(result.stdout.strip(), 'Work')
+
     def test_failed_write_rolls_back_applied_prefix(self):
         self.write('.zshenv', b'before')
         changes = {'.zshenv': (b'before', b'after', 0o600), '.zshrc': (None, b'new', 0o644)}

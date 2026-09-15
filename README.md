@@ -84,7 +84,9 @@ Git values, extra Git includes, edits inside shared Zsh code, and unknown change
 files stop the update before any config file is changed. Move such edits into a
 local file or reconcile them in the source clone, then preview again. Keep Git
 `include` and `includeIf` rules in `.gitconfig.local` so migration does not change
-their order or create recursive includes.
+their order or create recursive includes. After migration, changes to shared
+`.gitconfig` settings also stop apply; use `git config --file ~/.gitconfig.local`
+for account edits instead of `git config --global`.
 
 A fresh account must set its own Git identity:
 

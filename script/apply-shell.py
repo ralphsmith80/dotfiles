@@ -68,6 +68,8 @@ def migrate_git(current, base, shared, local):
     for key, values in actual.items():
         if key.startswith('includeif.') or (key == 'include.path' and values != ['~/.gitconfig.local']):
             raise ValueError('Move Git includes from .gitconfig into .gitconfig.local before applying')
+    if actual.get('include.path') == ['~/.gitconfig.local'] and actual != previous:
+        raise ValueError('Shared .gitconfig was edited after migration; move account edits into .gitconfig.local')
     for key in previous.keys() - actual.keys():
         if key in defaults and key != 'include.path':
             raise ValueError(f'.gitconfig removes shared setting {key}; resolve this before applying')

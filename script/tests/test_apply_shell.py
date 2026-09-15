@@ -85,6 +85,19 @@ class ApplyShellTest(unittest.TestCase):
                                 capture_output=True, text=True, check=True)
         self.assertEqual(result.stdout.strip(), 'Work')
 
+    def test_later_identity_override_is_not_reordered_before_local_include(self):
+        shell.apply(self.home, shell.prepare(self.home))
+        self.write('.workgit', b'[user]\nname=Work\n')
+        self.write('.gitconfig.local', b'[include]\npath=~/.workgit\n')
+        path = self.home / '.gitconfig'
+        path.write_bytes(path.read_bytes() + b'\n[user]\nname=New\n')
+        with self.assertRaisesRegex(ValueError, 'edited after migration'):
+            shell.prepare(self.home)
+        result = subprocess.run(['git', 'config', '--global', '--includes', '--get', 'user.name'],
+                                env={**os.environ, 'HOME': str(self.home), 'GIT_CONFIG_GLOBAL': str(path)},
+                                capture_output=True, text=True, check=True)
+        self.assertEqual(result.stdout.strip(), 'New')
+
     def test_legacy_home_gets_ignore_rules_without_replacing_existing_rules(self):
         subprocess.run(['git', 'init', '--bare', str(self.home / '.cfg')], capture_output=True, check=True)
         self.write('.cfg/info/exclude', b'/my-private-file\n')

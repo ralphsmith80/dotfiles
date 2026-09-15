@@ -89,6 +89,16 @@ if [[ "$INSTALL_RESULT" != 0 ]]; then exit "$INSTALL_RESULT"; fi
         self.assertIn("zsh installation failed", result.stderr)
         self.assertEqual(self.calls.read_text().splitlines(), ["pacman -S --needed --noconfirm zsh"])
 
+    def test_ubuntu_reinstalls_zsh_with_only_config_files_remaining(self):
+        self.release.write_text("ID=ubuntu\n")
+        self.stub("dpkg-query", "printf 'deinstall ok config-files'")
+        self.stub("apt-get", '''printf 'apt-get %s\n' "$*" >> "$CALLS"
+/bin/cp /bin/true "$HOME/bin/zsh"
+''')
+        result = self.run_shell()
+        self.assertEqual(result.returncode, 0, result.stdout + result.stderr)
+        self.assertEqual(self.calls.read_text().splitlines()[0], "apt-get install -y zsh")
+
     def test_success_without_available_zsh_stops_setup(self):
         self.stub("pacman", "exit 0")
         result = self.run_shell()

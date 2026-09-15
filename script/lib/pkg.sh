@@ -34,7 +34,7 @@ pkg_install() {
       fi
       ;;
     apt)
-      if ! dpkg -s "$pkg" >/dev/null 2>&1; then
+      if [[ "$(dpkg-query -W -f='${Status}' "$pkg" 2>/dev/null)" != "install ok installed" ]]; then
         sudo apt-get install -y "$pkg" || log_warn "apt install $pkg failed"
       fi
       ;;

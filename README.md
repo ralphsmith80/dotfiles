@@ -73,7 +73,9 @@ shell updates.
 | `~/.gitconfig.local` | Git identity and account-specific settings |
 
 Zsh loads each local file after its shared counterpart. Git includes its local
-file last. These files are optional and ignored by the dotfiles repository.
+file last. These files are optional and ignored by the dotfiles repository. For legacy
+`~/.cfg` installs, apply also adds their rules to `.cfg/info/exclude`, preserving
+existing rules.
 Keep future account edits there. Existing settings appended to a known shared
 Zsh file move into its local file. Git identity and changes from the last known
 Git config move into `.gitconfig.local`. With no known Git baseline, all existing

@@ -85,6 +85,33 @@ class ApplyShellTest(unittest.TestCase):
                                 capture_output=True, text=True, check=True)
         self.assertEqual(result.stdout.strip(), 'Work')
 
+    def test_legacy_home_gets_ignore_rules_without_replacing_existing_rules(self):
+        subprocess.run(['git', 'init', '--bare', str(self.home / '.cfg')], capture_output=True, check=True)
+        self.write('.cfg/info/exclude', b'/my-private-file\n')
+        shell.apply(self.home, shell.prepare(self.home))
+        self.assertTrue((self.home / '.cfg/info/exclude').read_bytes().startswith(b'/my-private-file\n'))
+        for name in ['.zshrc.local', '.zshenv.local', '.gitconfig.local']:
+            result = subprocess.run(['git', f'--git-dir={self.home / ".cfg"}', f'--work-tree={self.home}', 'check-ignore', name],
+                                    cwd=self.home, capture_output=True)
+            self.assertEqual(result.returncode, 0, result.stderr)
+        self.assertEqual(shell.prepare(self.home), {})
+
+    def test_edit_during_preparation_is_not_adopted_as_safe_to_overwrite(self):
+        original = shell.read
+        old = shell.git('show', 'HEAD:.zshrc').stdout + b'\nexport ACCOUNT_TOOL=iris\n'
+        self.write('.zshrc', old)
+        def concurrent_edit(path):
+            data = original(path)
+            if path == self.home / '.zshrc':
+                path.write_bytes(b'concurrent user edit')
+            return data
+        with patch.object(shell, 'read', side_effect=concurrent_edit):
+            changes = shell.prepare(self.home)
+        with self.assertRaisesRegex(ValueError, 'changed during preparation'):
+            shell.apply(self.home, changes)
+        self.assertEqual((self.home / '.zshrc').read_bytes(), b'concurrent user edit')
+        self.assertFalse((self.home / '.zshenv').exists())
+
     def test_failed_write_rolls_back_applied_prefix(self):
         self.write('.zshenv', b'before')
         changes = {'.zshenv': (b'before', b'after', 0o600), '.zshrc': (None, b'new', 0o644)}

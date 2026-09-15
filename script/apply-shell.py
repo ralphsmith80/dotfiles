@@ -90,15 +90,28 @@ def migrate_git(current, base, shared, local):
 
 def prepare(home):
     planned = {}
+    observed = {}
+    def observe(name):
+        if name not in observed:
+            observed[name] = read(home / name)
+        return observed[name]
+
+    if (home / '.cfg').is_dir():
+        name = '.cfg/info/exclude'
+        existing = observe(name) or b''
+        missing = [f'/{name}'.encode() for name in (*LOCAL.values(), '.gitconfig.local')
+                   if f'/{name}'.encode() not in existing.splitlines()]
+        if missing:
+            planned[name] = existing + (b'\n' if existing and not existing.endswith(b'\n') else b'') + b'\n'.join(missing) + b'\n'
+
     for name in FILES:
         source = (REPO / name).read_bytes()
-        target = home / name
-        current = read(target)
+        current = observe(name)
         if current is not None and current != source:
             versions = list(old_versions(name, home, history=name != '.gitconfig'))
             if name == '.gitconfig':
                 local_name = '.gitconfig.local'
-                local = read(home / local_name) or b''
+                local = observe(local_name) or b''
                 # Without a known baseline, retain all existing Git settings locally.
                 base = versions[0] if versions else b''
                 planned[local_name] = migrate_git(current, base, source, local)
@@ -109,7 +122,7 @@ def prepare(home):
                 suffix = current[len(max(matches, key=len)):]
                 if suffix.strip():
                     local_name = LOCAL[name]
-                    local = read(home / local_name) or b''
+                    local = observe(local_name) or b''
                     planned[local_name] = local + (b'\n' if local and not local.endswith(b'\n') else b'') + suffix
             elif current not in versions:
                 raise ValueError(f'{name} has unrecognized edits; leaving it unchanged')
@@ -120,7 +133,7 @@ def prepare(home):
         path = home / name
         if not path.parent.resolve().is_relative_to(home):
             raise ValueError(f'Path leaves the account home: {name}')
-        before = read(path)
+        before = observe(name)
         if before != after:
             mode = path.stat().st_mode & 0o777 if before is not None else 0o600 if name.endswith('.local') else 0o644
             changes[name] = (before, after, mode)
@@ -178,8 +191,13 @@ def main():
     try:
         if args.apply:
             state = home / STATE
+            if not state.resolve().is_relative_to(home):
+                raise ValueError('Shell state directory leaves the account home')
             state.mkdir(parents=True, exist_ok=True)
-            with (state / 'apply.lock').open('w') as lock:
+            lock_path = state / 'apply.lock'
+            if lock_path.is_symlink():
+                raise ValueError('Refusing a symlinked apply lock')
+            with lock_path.open('a') as lock:
                 fcntl.flock(lock, fcntl.LOCK_EX)
                 changes = prepare(home)
                 if changes:

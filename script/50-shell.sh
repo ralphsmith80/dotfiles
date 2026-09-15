@@ -14,17 +14,20 @@ log_step "Phase 50: shell + plugins"
 
 # --- ensure zsh present ------------------------------------------------------
 if ! has zsh; then
-  case "$OS" in
-    fedora)            pkg_install zsh ;;
-    popos|ubuntu|wsl2) sudo apt-get install -y zsh ;;
-  esac
+  pkg_install zsh || { log_error "zsh installation failed"; exit 1; }
+fi
+if ! has zsh; then
+  log_error "zsh is not available; install it or reboot after an atomic install, then retry"
+  exit 1
 fi
 
 # --- Oh My Zsh ---------------------------------------------------------------
 if [[ ! -d "$HOME/.oh-my-zsh" ]]; then
   log_info "  installing oh-my-zsh"
-  RUNZSH=no KEEP_ZSHRC=yes sh -c "$(curl -fsSL https://raw.githubusercontent.com/ohmyzsh/ohmyzsh/master/tools/install.sh)" \
-    || log_warn "  oh-my-zsh install failed"
+  installer=$(curl -fsSL https://raw.githubusercontent.com/ohmyzsh/ohmyzsh/master/tools/install.sh) \
+    || { log_error "oh-my-zsh download failed"; exit 1; }
+  CHSH=no RUNZSH=no KEEP_ZSHRC=yes sh -c "$installer" \
+    || { log_error "oh-my-zsh install failed"; exit 1; }
 else
   log_dim "  oh-my-zsh already installed"
 fi

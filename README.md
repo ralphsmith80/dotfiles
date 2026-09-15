@@ -26,6 +26,11 @@ curl -fsSL https://raw.githubusercontent.com/ralphsmith80/dotfiles/main/script/b
 curl -fsSL https://raw.githubusercontent.com/ralphsmith80/dotfiles/main/script/bootstrap.sh | bash -s -- --zsh-only
 ```
 
+`--zsh-only` limits the installer phases, but still checks out all tracked
+dotfiles into your home directory. For an existing Omarchy setup, copy the
+selected Zsh files and install their dependencies separately to preserve your
+other configuration.
+
 Or clone and run locally:
 
 ```bash
@@ -59,6 +64,8 @@ Phase 2 scripts:
 
 ## Supported platforms
 
+- **Arch Linux / Omarchy** (bootstrap prerequisites and Zsh/Oh My Zsh/plugins;
+  the full application installer is not yet supported)
 - **Fedora Workstation** (default — `dnf` for system pkgs)
 - **Fedora Silverblue / Kinoite** (atomic — `rpm-ostree` layered installs, reboot at end)
 - **Fedora Cosmic spin** (same as Workstation under the hood)

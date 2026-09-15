@@ -1,7 +1,7 @@
 #!/usr/bin/env bash
 # =============================================================================
 # Dotfiles Bootstrap — entrypoint
-# Works on Fedora (Workstation / Silverblue / Cosmic spin), Pop!_OS, Ubuntu/WSL2, macOS.
+# Works on Fedora, Pop!_OS, Ubuntu/WSL2, macOS; shell setup also supports Arch.
 #
 # Two phases:
 #   Phase 1 (this file): minimal prereqs + clone dotfiles bare-repo into $HOME.
@@ -82,11 +82,13 @@ detect_os_min() {
   # shellcheck disable=SC1091
   . /etc/os-release
   case "$ID" in
+    arch) echo "arch" ;;
     fedora) echo "fedora" ;;
     pop)    echo "popos" ;;
     ubuntu) [[ -n "${WSL_DISTRO_NAME:-}" ]] && echo "wsl2" || echo "ubuntu" ;;
     *)
       case "${ID_LIKE:-}" in
+        *arch*) echo "arch" ;;
         *fedora*) echo "fedora" ;;
         *debian*) echo "ubuntu" ;;
         *) echo "unknown" ;;
@@ -100,6 +102,9 @@ info "Detected OS: $OS_MIN"
 # --- Phase 1: minimal prereqs (git, curl) ------------------------------------
 step "Phase 1: install minimal prereqs"
 case "$OS_MIN" in
+  arch)
+    sudo pacman -S --needed --noconfirm git curl
+    ;;
   fedora)
     if command -v rpm-ostree >/dev/null 2>&1 && rpm-ostree status >/dev/null 2>&1; then
       # Atomic — git/curl are baked into the base image; nothing to do.

@@ -15,6 +15,10 @@ flatpak_has() {
 pkg_install() {
   local pkg="$1"
   case "$PKG_MGR" in
+    pacman)
+      # Use the current package database; never refresh it without a full upgrade.
+      sudo pacman -S --needed --noconfirm "$pkg"
+      ;;
     dnf)
       if ! rpm -q "$pkg" >/dev/null 2>&1; then
         sudo dnf install -y "$pkg" || log_warn "dnf install $pkg failed"

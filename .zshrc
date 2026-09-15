@@ -154,3 +154,6 @@ if [[ ${TERM:-} != dumb ]] && command -v starship >/dev/null 2>&1; then
   export STARSHIP_CONFIG="$HOME/.config/starship-zsh.toml"
   eval "$(starship init zsh)"
 fi
+
+# Keep account-specific aliases and tool integrations out of shared defaults.
+[[ ! -f "$HOME/.zshrc.local" ]] || source "$HOME/.zshrc.local"

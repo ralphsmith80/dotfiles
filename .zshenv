@@ -55,3 +55,6 @@ else
 	export PATH="${VOLTA_HOME}/bin:${PATH}"
 fi
 unset _VOLTA_USE_REAL _VOLTA_APPIMAGE_BASENAME _VOLTA_ARG0_BASENAME
+
+# Account-specific environment settings apply to interactive and scripted Zsh.
+[[ ! -f "$HOME/.zshenv.local" ]] || source "$HOME/.zshenv.local"

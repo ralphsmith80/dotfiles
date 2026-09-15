@@ -27,9 +27,9 @@ curl -fsSL https://raw.githubusercontent.com/ralphsmith80/dotfiles/main/script/b
 ```
 
 `--zsh-only` limits the installer phases, but still checks out all tracked
-dotfiles into your home directory. For an existing Omarchy setup, copy the
-selected Zsh files and install their dependencies separately to preserve your
-other configuration.
+dotfiles into your home directory. For an existing account or Omarchy setup,
+use the focused update below. Bootstrap refuses an existing Git config that
+has not been migrated to local overrides.
 
 Or clone and run locally:
 
@@ -37,6 +37,80 @@ Or clone and run locally:
 git clone https://github.com/ralphsmith80/dotfiles.git /tmp/dotfiles
 bash /tmp/dotfiles/script/bootstrap.sh
 ```
+
+## Update shell settings across accounts
+
+Use a normal clone for shared changes and updates. Run these commands as each
+account, with Python 3.9+ and Git installed:
+
+```bash
+# Once per account. Choose an unused directory for this clone.
+git clone https://github.com/ralphsmith80/dotfiles.git ~/dotfiles-source
+cd ~/dotfiles-source
+
+# Each update:
+git pull --ff-only
+python3 script/apply-shell.py          # Preview without writing
+python3 script/apply-shell.py --apply  # Back up, migrate, and update
+bash ~/script/50-shell.sh             # Install missing shell tools and plugins
+exec zsh
+```
+
+The apply command updates Zsh startup files, the plugin list, the Zsh Starship
+prompt, Git defaults, and the shell installer with its three helper files.
+It leaves other desktop and editor files alone. It does not switch branches
+in an existing `~/.cfg` repository. Make future shared changes in the normal
+clone and open a PR from there. Old `config status` output can still show the
+focused deployment as changes; do not reset it or use `config pull` to deploy
+shell updates.
+
+### Each account owns its overrides
+
+| File | Purpose |
+|------|---------|
+| `~/.zshenv.local` | Environment variables for all Zsh sessions |
+| `~/.zshrc.local` | Interactive aliases, PATH additions, and tool setup |
+| `~/.gitconfig.local` | Git identity and account-specific settings |
+
+Zsh loads each local file after its shared counterpart. Git includes its local
+file last. These files are optional and ignored by the dotfiles repository. For legacy
+`~/.cfg` installs, apply also adds their rules to `.cfg/info/exclude`, preserving
+existing rules.
+Keep future account edits there. Existing settings appended to a known shared
+Zsh file move into its local file. Git identity and changes from the last known
+Git config move into `.gitconfig.local`. With no known Git baseline, all existing
+Git settings are retained locally. Existing local files are preserved; conflicting
+Git values, extra Git includes, edits inside shared Zsh code, and unknown changes to other managed
+files stop the update before any config file is changed. Move such edits into a
+local file or reconcile them in the source clone, then preview again. Keep Git
+`include` and `includeIf` rules in `.gitconfig.local` so migration does not change
+their order or create recursive includes. After migration, changes to shared
+`.gitconfig` settings also stop apply; use `git config --file ~/.gitconfig.local`
+for account edits instead of `git config --global`.
+
+A fresh account must set its own Git identity:
+
+```bash
+git config --file ~/.gitconfig.local user.name "Your name"
+git config --file ~/.gitconfig.local user.email "you@example.com"
+```
+
+Backups are under `~/.local/state/dotfiles-shell/backups/`. The apply command
+keeps the last shared files in `~/.local/state/dotfiles-shell/shared/` for the
+next migration. It serializes
+concurrent applies and rolls back completed writes if a later write fails.
+A second apply with the same source makes no changes. Keep the source clone's
+Git history when moving it to another host so legacy shell versions can be
+recognized.
+
+### Desktop apps still opening Bash
+
+Changing the login shell does not update applications already running in a
+graphical session. T3 Code 0.0.40 chooses its Unix terminal shell from the
+server's inherited `SHELL`, with Bash as the fallback. A stale desktop launcher
+can keep passing Bash to T3 across application restarts. Log out and back in
+after changing the login shell, then open a new T3 terminal. Running `exec zsh`
+in an existing terminal changes only that terminal.
 
 ## Architecture
 
@@ -113,7 +187,7 @@ Edit `.zsh-plugins`:
 zsh-bat  https://github.com/fdellwing/zsh-bat  bat
 ```
 
-Re-run `bootstrap.sh`.
+Run the focused apply command, then `bash ~/script/50-shell.sh`.
 
 ## Adding Cursor extensions
 
@@ -121,12 +195,18 @@ Edit `.cursor-extensions-manifest` (one extension ID per line) and re-run.
 
 ## Managing dotfiles
 
+Edit shared files in the normal source clone and use its usual Git workflow:
+
 ```bash
-config status              # check what changed
-config add .zshrc          # stage a file
-config commit -m "update"  # commit
-config push                # push to GitHub
+cd ~/dotfiles-source
+git switch -c feat/my-shell-change
+git add .zshrc
+git commit -m "feat: update shared shell defaults"
+git push -u origin HEAD
 ```
+
+The `config` alias still works for inspecting a legacy bare repository. Use
+`.local` files for account changes and the focused apply command for deployment.
 
 ## Agent access to 1Password
 

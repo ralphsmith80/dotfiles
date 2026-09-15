@@ -54,8 +54,8 @@
 [fetch]
     prune = true
 
-[user]
-    name = Ralph Smith
-    email = devralph@fastmail.com
 [init]
     defaultBranch = main
+
+[include]
+    path = ~/.gitconfig.local

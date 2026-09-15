@@ -75,6 +75,16 @@ case "$BOOTSTRAP_ZSH_ONLY" in
     ;;
 esac
 
+# Existing Git settings must be migrated before checkout can replace them.
+if [[ -e "$HOME/.gitconfig" || -L "$HOME/.gitconfig" ]]; then
+  if ! command -v git >/dev/null 2>&1 ||
+     ! git config --file "$HOME/.gitconfig" --get-all include.path | /usr/bin/grep -Fxq '~/.gitconfig.local'; then
+    error "Existing Git config needs migration before bootstrap."
+    error "From a dotfiles checkout, run: python3 script/apply-shell.py --apply"
+    exit 1
+  fi
+fi
+
 # --- minimal OS detect (phase 1 only) ----------------------------------------
 detect_os_min() {
   if [[ "$OSTYPE" == "darwin"* ]]; then echo "macos"; return; fi

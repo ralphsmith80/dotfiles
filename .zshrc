@@ -4,17 +4,8 @@
 # Path to your Oh My Zsh installation.
 export ZSH="$HOME/.oh-my-zsh"
 
-# Set name of the theme to load --- if set to "random", it will
-# load a random theme each time Oh My Zsh is loaded, in which case,
-# to know which specific one was loaded, run: echo $RANDOM_THEME
-# See https://github.com/ohmyzsh/ohmyzsh/wiki/Themes
-ZSH_THEME="amuse"
-
-# Set list of themes to pick from when loading at random
-# Setting this variable when ZSH_THEME=random will cause zsh to load
-# a theme from this variable instead of looking in $ZSH/themes/
-# If set to an empty array, this variable will have no effect.
-# ZSH_THEME_RANDOM_CANDIDATES=( "robbyrussell" "agnoster" )
+# Starship owns the prompt; keep Oh My Zsh for its plugins.
+ZSH_THEME=""
 
 # Uncomment the following line to use case-sensitive completion.
 # CASE_SENSITIVE="true"
@@ -65,6 +56,8 @@ ZSH_THEME="amuse"
 # Would you like to use another custom folder than $ZSH/custom?
 # ZSH_CUSTOM=/path/to/new-custom-folder
 
+[[ -r /usr/share/omarchy/default/bash/env-bootstrap ]] && source /usr/share/omarchy/default/bash/env-bootstrap
+
 # PATH setup must happen before Oh My Zsh loads plugins so plugins can find
 # Homebrew tools such as bat.
 export FLATPAK_HOME="$HOME/.local/share/flatpak/exports/"
@@ -84,12 +77,14 @@ if [[ -f "$HOME/.zsh-plugins" ]]; then
   done < "$HOME/.zsh-plugins"
 fi
 
-source $ZSH/oh-my-zsh.sh
+# Oh My Zsh handles both current and older fzf shell integrations.
+if [[ -o zle && -t 0 ]] && command -v fzf >/dev/null 2>&1; then
+  plugins+=(fzf)
+fi
+source "$ZSH/oh-my-zsh.sh"
 
-# Override prompt to include hostname
-PROMPT='
-%{$fg_bold[magenta]%}%m%{$reset_color%} %{$fg_bold[green]%}%~%{$reset_color%}$(git_prompt_info) ⌚ %{$fg_bold[red]%}%*%{$reset_color%}
-$ '
+# Keep a hostname prompt when Starship is unavailable or TERM=dumb.
+PROMPT=$'\n%m %~\n%# '
 
 # User configuration
 
@@ -105,7 +100,7 @@ if [[ -n $SSH_CONNECTION ]]; then
 else
   export EDITOR='nvim'
 fi
-export SUDO_EDITOR='/home/linuxbrew/.linuxbrew/bin/nvim'
+export SUDO_EDITOR="${commands[nvim]:-$EDITOR}"
 
 # Compilation flags
 # export ARCHFLAGS="-arch $(uname -m)"
@@ -125,7 +120,9 @@ export SUDO_EDITOR='/home/linuxbrew/.linuxbrew/bin/nvim'
 alias config="git --git-dir=\$HOME/.cfg/ --work-tree=\$HOME"
 alias nvim-kickstart='NVIM_APPNAME="nvim-kickstart" nvim'
 alias nvim-lazy='NVIM_APPNAME="nvim-lazyvim" nvim'
-alias nvim='NVIM_APPNAME="nvim-lazyvim" nvim'
+if [[ -d "$HOME/.config/nvim-lazyvim" ]]; then
+  alias nvim='NVIM_APPNAME="nvim-lazyvim" nvim'
+fi
 alias claudeyolo='claude --dangerously-skip-permissions'
 
 # Volta PATH (and Cursor real-binary ordering) lives in ~/.zshenv — do not prepend $VOLTA_HOME/bin here
@@ -134,4 +131,26 @@ alias claudeyolo='claude --dangerously-skip-permissions'
 # Worktrunk (git worktree manager) shell completions
 if command -v wt &> /dev/null; then
   eval "$(wt config shell init zsh)"
+fi
+
+# Keep the Omarchy tool environment when running Zsh.
+export BAT_THEME=ansi
+if command -v omarchy-launch-browser >/dev/null 2>&1; then
+  export BROWSER="${BROWSER:-omarchy-launch-browser}"
+fi
+if command -v mise >/dev/null 2>&1; then
+  eval "$(mise activate zsh)"
+fi
+if command -v zoxide >/dev/null 2>&1; then
+  eval "$(zoxide init zsh)"
+fi
+if command -v eza >/dev/null 2>&1; then
+  alias ls='eza -lh --group-directories-first --icons=auto'
+  alias lsa='ls -a'
+  alias lt='eza --tree --level=2 --long --icons --git'
+  alias lta='lt -a'
+fi
+if [[ ${TERM:-} != dumb ]] && command -v starship >/dev/null 2>&1; then
+  export STARSHIP_CONFIG="$HOME/.config/starship-zsh.toml"
+  eval "$(starship init zsh)"
 fi

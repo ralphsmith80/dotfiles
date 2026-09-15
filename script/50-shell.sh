@@ -1,5 +1,5 @@
 #!/usr/bin/env bash
-# Phase 50 — Oh My Zsh install, custom zsh plugins (from ~/.zsh-plugins),
+# Phase 50 — Zsh, Starship, eza, custom zsh plugins (from ~/.zsh-plugins),
 # and default shell switch to zsh.
 
 set -uo pipefail
@@ -12,19 +12,42 @@ source "$HOME/script/lib/pkg.sh"
 
 log_step "Phase 50: shell + plugins"
 
+# Full bootstrap installs Homebrew in an earlier process on non-Arch systems.
+if [[ "$OS" != "arch" ]]; then
+  load_brew || true
+fi
+
 # --- ensure zsh present ------------------------------------------------------
 if ! has zsh; then
-  case "$OS" in
-    fedora)            pkg_install zsh ;;
-    popos|ubuntu|wsl2) sudo apt-get install -y zsh ;;
-  esac
+  pkg_install zsh || { log_error "zsh installation failed"; exit 1; }
 fi
+if ! has zsh; then
+  log_error "zsh is not available; install it or reboot after an atomic install, then retry"
+  exit 1
+fi
+
+# --- prompt and directory listings ------------------------------------------
+for tool in starship eza; do
+  if ! has "$tool"; then
+    if [[ "$OS" != "arch" ]] && has brew; then
+      brew_install "$tool"
+    else
+      pkg_install "$tool"
+    fi
+  fi
+  if ! has "$tool"; then
+    log_error "$tool is not available; install it with your package manager or Homebrew, then retry"
+    exit 1
+  fi
+done
 
 # --- Oh My Zsh ---------------------------------------------------------------
 if [[ ! -d "$HOME/.oh-my-zsh" ]]; then
   log_info "  installing oh-my-zsh"
-  RUNZSH=no KEEP_ZSHRC=yes sh -c "$(curl -fsSL https://raw.githubusercontent.com/ohmyzsh/ohmyzsh/master/tools/install.sh)" \
-    || log_warn "  oh-my-zsh install failed"
+  installer=$(curl -fsSL https://raw.githubusercontent.com/ohmyzsh/ohmyzsh/master/tools/install.sh) \
+    || { log_error "oh-my-zsh download failed"; exit 1; }
+  CHSH=no RUNZSH=no KEEP_ZSHRC=yes sh -c "$installer" \
+    || { log_error "oh-my-zsh install failed"; exit 1; }
 else
   log_dim "  oh-my-zsh already installed"
 fi

@@ -13,15 +13,7 @@ MANIFEST="$HOME/.apps-manifest"
 
 log_step "Phase 20: brew packages"
 
-if ! has brew; then
-  if [[ -x /home/linuxbrew/.linuxbrew/bin/brew ]]; then
-    eval "$(/home/linuxbrew/.linuxbrew/bin/brew shellenv)"
-  elif [[ -x /opt/homebrew/bin/brew ]]; then
-    eval "$(/opt/homebrew/bin/brew shellenv)"
-  fi
-fi
-
-if ! has brew; then
+if ! load_brew; then
   log_error "brew not found — did phase 00 succeed?"
   exit 0
 fi

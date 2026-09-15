@@ -1,8 +1,8 @@
 # OS + variant detection. Sets globals consumed by other phases:
-#   OS         — macos | fedora | popos | ubuntu | wsl2 | unknown
+#   OS         — macos | arch | fedora | popos | ubuntu | wsl2 | unknown
 #   VARIANT    — workstation | silverblue | kinoite | cosmic-spin | n/a
 #   IS_ATOMIC  — 0 | 1
-#   PKG_MGR    — dnf | rpm-ostree | apt | brew | none
+#   PKG_MGR    — pacman | dnf | rpm-ostree | apt | brew | none
 
 detect_os() {
   if [[ "$OSTYPE" == "darwin"* ]]; then
@@ -11,6 +11,7 @@ detect_os() {
     # shellcheck disable=SC1091
     . /etc/os-release
     case "$ID" in
+      arch) echo "arch" ;;
       fedora) echo "fedora" ;;
       pop)    echo "popos" ;;
       ubuntu)
@@ -18,6 +19,7 @@ detect_os() {
         ;;
       *)
         case "${ID_LIKE:-}" in
+          *arch*) echo "arch" ;;
           *debian*) echo "ubuntu" ;;
           *fedora*) echo "fedora" ;;
           *) echo "unknown" ;;
@@ -63,6 +65,7 @@ case "$VARIANT" in
 esac
 
 case "$OS" in
+  arch) PKG_MGR="pacman" ;;
   macos) PKG_MGR="brew" ;;
   fedora)
     if [[ "$IS_ATOMIC" -eq 1 ]]; then PKG_MGR="rpm-ostree"; else PKG_MGR="dnf"; fi

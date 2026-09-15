@@ -4,6 +4,20 @@
 # Returns true if a command is available on PATH.
 has() { command -v "$1" >/dev/null 2>&1; }
 
+# Each bootstrap phase is a new process, so restore Homebrew's PATH when needed.
+load_brew() {
+  local brew_path
+  if ! has brew; then
+    for brew_path in /home/linuxbrew/.linuxbrew/bin/brew /opt/homebrew/bin/brew /usr/local/bin/brew; do
+      if [[ -x "$brew_path" ]]; then
+        eval "$("$brew_path" shellenv)"
+        break
+      fi
+    done
+  fi
+  has brew
+}
+
 # Returns true if a flatpak app ID is installed (user or system scope).
 flatpak_has() {
   flatpak info --user "$1" >/dev/null 2>&1 || flatpak info --system "$1" >/dev/null 2>&1
@@ -15,6 +29,10 @@ flatpak_has() {
 pkg_install() {
   local pkg="$1"
   case "$PKG_MGR" in
+    pacman)
+      # Use the current package database; never refresh it without a full upgrade.
+      sudo pacman -S --needed --noconfirm "$pkg"
+      ;;
     dnf)
       if ! rpm -q "$pkg" >/dev/null 2>&1; then
         sudo dnf install -y "$pkg" || log_warn "dnf install $pkg failed"
@@ -30,7 +48,7 @@ pkg_install() {
       fi
       ;;
     apt)
-      if ! dpkg -s "$pkg" >/dev/null 2>&1; then
+      if [[ "$(dpkg-query -W -f='${Status}' "$pkg" 2>/dev/null)" != "install ok installed" ]]; then
         sudo apt-get install -y "$pkg" || log_warn "apt install $pkg failed"
       fi
       ;;

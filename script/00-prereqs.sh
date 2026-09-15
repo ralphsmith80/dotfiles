@@ -95,13 +95,7 @@ setup_brew() {
   fi
 
   # Make brew available in this script's process
-  if [[ -x /home/linuxbrew/.linuxbrew/bin/brew ]]; then
-    eval "$(/home/linuxbrew/.linuxbrew/bin/brew shellenv)"
-  elif [[ -x /opt/homebrew/bin/brew ]]; then
-    eval "$(/opt/homebrew/bin/brew shellenv)"
-  elif [[ -x /usr/local/bin/brew ]]; then
-    eval "$(/usr/local/bin/brew shellenv)"
-  fi
+  load_brew || log_warn "  homebrew is not available"
 }
 
 log_step "Phase 00: prerequisites"

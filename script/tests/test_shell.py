@@ -28,6 +28,10 @@ class ShellBootstrapTest(unittest.TestCase):
         for relative in ["lib/detect.sh", "bootstrap.sh"]:
             path = self.scripts / relative
             path.write_text(path.read_text().replace("/etc/os-release", shlex.quote(str(self.release))))
+        pkg = self.scripts / "lib/pkg.sh"
+        pkg.write_text(pkg.read_text().replace("/home/linuxbrew/.linuxbrew/bin/brew", "/nonexistent/linuxbrew")
+                       .replace("/opt/homebrew/bin/brew", "/nonexistent/homebrew")
+                       .replace("/usr/local/bin/brew", "/nonexistent/brew"))
         self.env = os.environ.copy()
         self.env.update(HOME=str(self.home), PATH=str(self.bin), SHELL="/bin/bash",
                         CALLS=str(self.calls), INSTALL_RESULT="0", OSTYPE="linux-gnu")
@@ -37,8 +41,10 @@ class ShellBootstrapTest(unittest.TestCase):
         (self.bin / "date").symlink_to(shutil.which("date"))
         self.stub("pacman", '''printf 'pacman %s\n' "$*" >> "$CALLS"
 if [[ "$INSTALL_RESULT" != 0 ]]; then exit "$INSTALL_RESULT"; fi
-/bin/cp /bin/true "$HOME/bin/zsh"
+/bin/cp /bin/true "$HOME/bin/${@: -1}"
 ''')
+        self.stub("starship", "exit 0")
+        self.stub("eza", "exit 0")
         self.stub("git", 'printf "git %s\n" "$*" >> "$CALLS"')
         self.stub("chsh", 'printf "chsh %s\n" "$*" >> "$CALLS"')
         self.stub("curl", 'printf "curl\n" >> "$CALLS"; exit 22')
@@ -88,6 +94,39 @@ if [[ "$INSTALL_RESULT" != 0 ]]; then exit "$INSTALL_RESULT"; fi
         self.assertNotEqual(result.returncode, 0)
         self.assertIn("zsh installation failed", result.stderr)
         self.assertEqual(self.calls.read_text().splitlines(), ["pacman -S --needed --noconfirm zsh"])
+
+    def test_fresh_arch_installs_prompt_and_listing_tools_and_rerun_skips_them(self):
+        for tool in ["starship", "eza"]:
+            (self.bin / tool).unlink()
+        result = self.run_shell()
+        self.assertEqual(result.returncode, 0, result.stdout + result.stderr)
+        self.assertEqual(self.calls.read_text().splitlines()[:3], [
+            f"pacman -S --needed --noconfirm {tool}" for tool in ["zsh", "starship", "eza"]])
+        self.calls.write_text("")
+        self.assertEqual(self.run_shell().returncode, 0)
+        self.assertNotIn("pacman", self.calls.read_text())
+
+    def test_unavailable_prompt_stops_before_plugins_or_shell_switch(self):
+        self.stub("zsh", "exit 0")
+        (self.bin / "starship").unlink()
+        self.env["INSTALL_RESULT"] = "1"
+        result = self.run_shell()
+        self.assertNotEqual(result.returncode, 0)
+        self.assertIn("starship is not available", result.stderr)
+        self.assertEqual(self.calls.read_text().splitlines(), ["pacman -S --needed --noconfirm starship"])
+
+    def test_non_arch_uses_existing_homebrew_for_prompt_and_listing_tools(self):
+        self.release.write_text("ID=ubuntu\n")
+        self.stub("zsh", "exit 0")
+        for tool in ["starship", "eza"]:
+            (self.bin / tool).unlink()
+        self.stub("brew", '''[[ "$1" == list ]] && exit 1
+printf 'brew %s\n' "$*" >> "$CALLS"
+/bin/cp /bin/true "$HOME/bin/$2"
+''')
+        result = self.run_shell()
+        self.assertEqual(result.returncode, 0, result.stdout + result.stderr)
+        self.assertEqual(self.calls.read_text().splitlines()[:2], ["brew install starship", "brew install eza"])
 
     def test_ubuntu_reinstalls_zsh_with_only_config_files_remaining(self):
         self.release.write_text("ID=ubuntu\n")

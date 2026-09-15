@@ -40,7 +40,7 @@ usage() {
 Usage: bootstrap.sh [--zsh-only]
 
 Options:
-  --zsh-only    Check out dotfiles, then install only zsh/Oh My Zsh/plugins.
+  --zsh-only    Check out dotfiles, then install Zsh/Starship/eza/Oh My Zsh/plugins.
   -h, --help    Show this help.
 
 Environment:

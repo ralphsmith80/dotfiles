@@ -22,7 +22,7 @@ required tiling patch, backups, and optional monitor settings.
 # One-liner — installs everything and checks out dotfiles
 curl -fsSL https://raw.githubusercontent.com/ralphsmith80/dotfiles/main/script/bootstrap.sh | bash
 
-# Zsh-only — checks out dotfiles, then installs zsh/Oh My Zsh/plugins only
+# Zsh-only — checks out dotfiles, then installs Zsh, Starship, eza, and plugins
 curl -fsSL https://raw.githubusercontent.com/ralphsmith80/dotfiles/main/script/bootstrap.sh | bash -s -- --zsh-only
 ```
 
@@ -58,13 +58,13 @@ Phase 2 scripts:
 | 30 | `30-flatpak.sh` | Flatpak apps (`flatpak:` entries) |
 | 40 | `40-direct.sh` | Bespoke installers — 1Password, Cursor, etc. (`direct:` entries) |
 | 45 | `45-1password-env.sh` | Shared 1Password loader, local credential permissions, and Hermes links |
-| 50 | `50-shell.sh` | Oh My Zsh, custom plugins from `.zsh-plugins`, default shell |
+| 50 | `50-shell.sh` | Zsh, Starship, eza, Oh My Zsh, plugins from `.zsh-plugins`, default shell |
 | 60 | `60-cursor-extensions.sh` | Cursor extensions from `.cursor-extensions-manifest` |
 | 99 | `99-post.sh` | rclone Google Drive reconnect + mount, default browser, reboot prompt |
 
 ## Supported platforms
 
-- **Arch Linux / Omarchy** (bootstrap prerequisites and Zsh/Oh My Zsh/plugins;
+- **Arch Linux / Omarchy** (bootstrap prerequisites and Zsh/Starship/eza/plugins;
   the full application installer is not yet supported)
 - **Fedora Workstation** (default — `dnf` for system pkgs)
 - **Fedora Silverblue / Kinoite** (atomic — `rpm-ostree` layered installs, reboot at end)
@@ -86,6 +86,24 @@ direct:cursor                     # custom installer in script/40-direct.sh
 Re-run `bootstrap.sh` — idempotent, skips anything already installed.
 
 To add a brand-new direct installer, write an `install_<name>` function in `script/40-direct.sh` and reference `direct:<name>` from the manifest.
+
+## Zsh defaults
+
+Zsh uses Oh My Zsh for plugins and Starship for the prompt. The prompt shows
+the machine name on local and SSH sessions, then the directory and Git status.
+The input starts on a second line. `ls`, `lsa`, `lt`, and `lta` use eza for
+icon listings and directory trees. Use a Nerd Font in your terminal for icons.
+
+The prompt lives in `.config/starship-zsh.toml`. Zsh selects this file without
+changing Omarchy's Bash prompt. If Starship is missing, Zsh keeps a simple
+hostname prompt. Existing fzf, zoxide, and mise installations get Zsh integration.
+Omarchy's browser and environment settings apply only when available.
+
+The shell installer installs missing Starship and eza commands through pacman
+on Arch, or Homebrew when available on other systems. Otherwise it tries the
+system package manager. Older distributions may need Homebrew for these tools;
+setup stops with an error if either command remains unavailable. The full
+bootstrap installs Homebrew on its supported non-Arch platforms.
 
 ## Adding zsh plugins
 

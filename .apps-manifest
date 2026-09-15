@@ -35,7 +35,7 @@ sys:make
 sys:pkgconf-pkg-config
 
 # === Homebrew (CLI dev tools) =================================================
-# Note: node + pnpm come from Volta in script/15-volta.sh — not from brew.
+# Node + pnpm come from phase 15. Starship + eza come from shell phase 50.
 brew:bat
 brew:ripgrep
 brew:neovim
@@ -44,7 +44,6 @@ brew:lazygit
 brew:rclone
 brew:fzf
 brew:zoxide
-brew:eza
 brew:uv
 brew:gemini-cli
 

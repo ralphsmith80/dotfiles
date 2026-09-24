@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""Restore personal Omarchy overrides. Preview by default; never install packages."""
+"""Restore personal Omarchy overrides. Preview by default; never install system packages."""
 
 import argparse
 from contextlib import contextmanager
@@ -17,12 +17,10 @@ import tempfile
 
 REPO = Path(__file__).resolve().parents[1]
 PROFILE = REPO / "omarchy"
-BUILD = PROFILE / ".build"
 OMARCHY = Path(os.environ.get("OMARCHY_PATH", "/usr/share/omarchy"))
-HY3_COMMIT = "42b7ed8fd9aefd3f36e5f617afd5071245c67853"
-ARCHIVE_SHA256 = "b4b8842cdfb0562f1f4228ef35c746f040379a33ee0912ad089f693206c34076"
-OUTPUTS = {"libhy3-cosmic.so": ".local/lib/hy3/libhy3-cosmic.so",
-           "hyprland-commit": ".local/lib/hy3/hyprland-commit"}
+PLUGIN_ID = "ralphsmith80.equal-tiling"
+PLUGIN_URL = "https://github.com/ralphsmith80/omarchy-equal-tiling"
+
 
 def safe_path(root, relative):
     """Refuse symlinks and non-directory parents before reading or writing."""
@@ -66,53 +64,6 @@ def atomic_write(path, data, mode):
             os.unlink(temporary)
 
 
-def build_signature():
-    return {"upstream": HY3_COMMIT, "arch": platform.machine(),
-            "headers": hashlib.sha256(Path("/usr/include/hyprland/src/version.h").read_bytes()).hexdigest(),
-            "patch": hashlib.sha256((PROFILE / "hy3.patch").read_bytes()).hexdigest()}
-
-
-def build_current(signature):
-    metadata = BUILD / "signature.json"
-    if not metadata.is_file():
-        return False
-    saved = json.loads(metadata.read_text())
-    return saved.get("inputs") == signature and all(
-        saved.get("outputs", {}).get(name) is not None
-        and state(safe_path(BUILD, name)) == saved["outputs"][name] for name in OUTPUTS)
-
-
-def build_hy3():
-    signature = build_signature()
-    BUILD.mkdir(parents=True, exist_ok=True)
-    with write_lock(BUILD):
-        if build_current(signature):
-            print("hy3 build is unchanged; skipping download and compile.")
-            return
-        (BUILD / "signature.json").unlink(missing_ok=True)
-        with tempfile.TemporaryDirectory(prefix="compile-", dir=BUILD) as temporary:
-            work = Path(temporary)
-            archive = work / "hy3.tar.gz"
-            url = f"https://codeload.github.com/outfoxxed/hy3/tar.gz/{HY3_COMMIT}"
-            subprocess.run(["curl", "-fsSL", "--retry", "2", url, "-o", str(archive)], check=True)
-            if hashlib.sha256(archive.read_bytes()).hexdigest() != ARCHIVE_SHA256:
-                raise ValueError("hy3 download checksum mismatch; nothing was built or installed.")
-            subprocess.run(["tar", "-xzf", str(archive), "-C", str(work)], check=True)
-            source = work / f"hy3-{HY3_COMMIT}"
-            subprocess.run(["patch", "--batch", "--forward", "-p1", "-i", str(PROFILE / "hy3.patch")], cwd=source, check=True)
-            subprocess.run(["cmake", "-S", str(source), "-B", str(work / "out"), "-G", "Ninja", "-DCMAKE_BUILD_TYPE=Release"], check=True)
-            subprocess.run(["cmake", "--build", str(work / "out"), "--parallel", "4"], check=True)
-            header = Path("/usr/include/hyprland/src/version.h").read_text()
-            commit = re.search(r'^#define\s+GIT_COMMIT_HASH\s+"([0-9a-f]+)"', header, re.MULTILINE)
-            if not commit:
-                raise ValueError("Cannot identify the installed Hyprland headers.")
-            atomic_write(BUILD / "libhy3-cosmic.so", (work / "out/libhy3.so").read_bytes(), 0o755)
-            atomic_write(BUILD / "hyprland-commit", (commit[1] + "\n").encode(), 0o644)
-        metadata = {"inputs": signature, "outputs": {name: state(BUILD / name) for name in OUTPUTS}}
-        atomic_write(BUILD / "signature.json", json.dumps(metadata).encode(), 0o644)
-        print("Built patched hy3 in omarchy/.build. Nothing installed; preview before applying.")
-
-
 def find_loader(text, module):
     # Ignore long Lua comments/strings while keeping offsets into the original.
     masked = re.sub(r"(?s)(?:--)?\[(=*)\[.*?\]\1\]",
@@ -128,14 +79,6 @@ def collect_files(args):
             relative = str(source.relative_to(PROFILE / "config"))
             if relative != "hypr/monitors.lua" or args.with_hardware:
                 files[".config/" + relative] = (source.read_bytes(), 0o644)
-    if (BUILD / "signature.json").is_file() and build_current(build_signature()):
-        for name, relative in OUTPUTS.items():
-            source = BUILD / name
-            files[relative] = (source.read_bytes(), stat.S_IMODE(source.stat().st_mode))
-    elif args.apply:
-        raise ValueError("Build custom tiling first: python3 script/omarchy.py --build")
-    else:
-        print("BUILD REQUIRED: python3 script/omarchy.py --build")
     # Keep the machine's main configuration; load our overrides before saved layouts.
     target = ".config/hypr/hyprland.lua"
     main = safe_path(args.home, target)
@@ -278,11 +221,37 @@ def restore_files(args, files):
     print("After login, check: hyprctl reload && hyprctl configerrors && hyprctl plugin list")
 
 
+def read_json(command):
+    """Run a read-only query that needs the running Omarchy desktop session."""
+    try:
+        return json.loads(subprocess.run(command, check=True, capture_output=True, text=True).stdout)
+    except (OSError, subprocess.CalledProcessError, json.JSONDecodeError) as error:
+        detail = (getattr(error, "stderr", None) or str(error)).strip()
+        raise ValueError(f"{shlex.join(command)} failed. Run this inside the Omarchy desktop session. {detail}") from None
+
+
+def plugin_command(args):
+    """Return the Omarchy command that adds or enables equal tiling, or None.
+    The plugin builds and loads its own hy3, so no other setup may hold hy3."""
+    if args.home != Path.home().resolve():
+        print(f"SKIP plugin {PLUGIN_ID}: Omarchy installs plugins for the current user only.")
+        return None
+    plugins = read_json(["omarchy", "plugin", "list", "--json"])
+    plugin = next((entry for entry in plugins if entry["id"] == PLUGIN_ID), None)
+    if plugin and plugin["enabled"]:
+        return None
+    if any(loaded.get("name") == "hy3" for loaded in read_json(["hyprctl", "plugin", "list", "-j"])):
+        print(f"WAIT plugin {PLUGIN_ID}: another setup has hy3 loaded. "
+              "Run hyprctl reload, then run this command again.")
+        return None
+    if plugin:
+        return ["omarchy", "plugin", "enable", PLUGIN_ID]
+    return ["omarchy", "plugin", "add", PLUGIN_URL, "--enable", "--yes"]
+
+
 def main():
     parser = argparse.ArgumentParser(description=__doc__)
-    action = parser.add_mutually_exclusive_group()
-    action.add_argument("--apply", action="store_true", help="Back up and apply the overrides")
-    action.add_argument("--build", action="store_true", help="Download pinned hy3, apply our patch, and build locally")
+    parser.add_argument("--apply", action="store_true", help="Back up and apply the overrides, then add the tiling plugin")
     parser.add_argument("--with-hardware", action="store_true", help="Include the saved Samsung monitor setup")
     parser.add_argument("--overwrite-local", action="store_true", help="Back up and replace later local edits")
     parser.add_argument("--rollback", type=Path, help="Preview an undo; add --apply to perform it")
@@ -293,8 +262,6 @@ def main():
         if not args.home.is_dir():
             raise ValueError("Target home must exist.")
         if args.rollback:
-            if args.build:
-                parser.error("--build and --rollback cannot be combined")
             if args.apply:
                 with write_lock(args.home):
                     rollback(args.home, args.rollback, True)
@@ -302,17 +269,22 @@ def main():
                 rollback(args.home, args.rollback, False)
         elif platform.system() != "Linux" or not (OMARCHY / "default/hypr/bootstrap.lua").is_file():
             print("Omarchy with Lua configuration is not installed; nothing to do.")
-        elif args.build:
-            build_hy3()
         else:
             if os.environ.get("XDG_CONFIG_HOME") and Path(os.environ["XDG_CONFIG_HOME"]).resolve() != args.home / ".config":
                 raise ValueError("These overrides require Omarchy's standard ~/.config location.")
-            if args.apply and BUILD.is_dir():
-                with write_lock(BUILD):
-                    files = collect_files(args)
-            else:
-                files = collect_files(args)
-            restore_files(args, files)
+            # Check the plugin first so a run outside the desktop stops before any write.
+            try:
+                command = plugin_command(args)
+            except ValueError as error:
+                if args.apply:
+                    raise
+                print(f"PLUGIN unknown: {error}")
+                command = None
+            restore_files(args, collect_files(args))
+            if command:
+                print(f"PLUGIN {shlex.join(command)}")
+                if args.apply:
+                    subprocess.run(command, check=True)
     except (OSError, ValueError, subprocess.CalledProcessError) as error:
         print(f"Error: {error}", file=sys.stderr)
         return 1

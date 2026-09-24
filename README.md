@@ -8,13 +8,12 @@ For the personal Omarchy changes, use the separate configuration command from
 this checkout. It does not run the package installer below.
 
 ```bash
-python3 script/omarchy.py --build
 python3 script/omarchy.py          # Preview
 python3 script/omarchy.py --apply
 ```
 
 See [the small Omarchy setup](omarchy/README.md) for the three configuration files,
-required tiling patch, backups, and optional monitor settings.
+the equal tiling plugin, backups, and optional monitor settings.
 
 ## Quick Start (new machine)
 

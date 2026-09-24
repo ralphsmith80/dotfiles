@@ -151,31 +151,12 @@ class RestoreTest(unittest.TestCase):
         main.parent.mkdir(parents=True)
         original = 'require("default.hypr.omarchy")\n-- personal settings\nrequire("default.hypr.toggles")\n'
         main.write_text(original)
-        with patch.object(omarchy, "BUILD", self.home / "no-build"):
-            files = omarchy.collect_files(self.args)
-            self.assertNotIn(".config/hypr/monitors.lua", files)
-            edited = files[".config/hypr/hyprland.lua"][0].decode()
-            self.assertIn('-- personal settings\nrequire("hypr.dotfiles")\nrequire("default.hypr.toggles")', edited)
-            main.write_text(edited)
-            self.assertEqual(omarchy.collect_files(self.args)[".config/hypr/hyprland.lua"][0], edited.encode())
-            self.args.apply = True
-            with self.assertRaisesRegex(ValueError, "Build custom tiling first"):
-                omarchy.collect_files(self.args)
-
-    def test_build_cache_checks_inputs_and_actual_outputs(self):
-        build = self.home / "build"
-        build.mkdir()
-        for name in omarchy.OUTPUTS:
-            (build / name).write_bytes(b"output")
-        signature = {"version": "test"}
-        metadata = {"inputs": signature, "outputs": {name: omarchy.state(build / name) for name in omarchy.OUTPUTS}}
-        (build / "signature.json").write_text(json.dumps(metadata))
-        with patch.object(omarchy, "BUILD", build), patch.object(omarchy, "build_signature", return_value=signature):
-            with patch.object(omarchy.subprocess, "run", side_effect=AssertionError("Build should be skipped")):
-                omarchy.build_hy3()
-            self.assertFalse(omarchy.build_current({"version": "changed"}))
-            (build / "libhy3-cosmic.so").write_bytes(b"corrupt")
-            self.assertFalse(omarchy.build_current(signature))
+        files = omarchy.collect_files(self.args)
+        self.assertNotIn(".config/hypr/monitors.lua", files)
+        edited = files[".config/hypr/hyprland.lua"][0].decode()
+        self.assertIn('-- personal settings\nrequire("hypr.dotfiles")\nrequire("default.hypr.toggles")', edited)
+        main.write_text(edited)
+        self.assertEqual(omarchy.collect_files(self.args)[".config/hypr/hyprland.lua"][0], edited.encode())
 
     def test_commented_loaders_are_ignored_and_single_quotes_are_supported(self):
         main = self.home / ".config/hypr/hyprland.lua"
@@ -183,12 +164,49 @@ class RestoreTest(unittest.TestCase):
         comments = '-- require("hypr.dotfiles")\n--[=[\nrequire("hypr.dotfiles")\nrequire("default.hypr.toggles")\n]=]\n'
         original = comments + "require('default.hypr.toggles') -- saved layouts\n"
         main.write_text(original)
-        with patch.object(omarchy, "BUILD", self.home / "no-build"):
-            edited = omarchy.collect_files(self.args)[".config/hypr/hyprland.lua"][0].decode()
+        edited = omarchy.collect_files(self.args)[".config/hypr/hyprland.lua"][0].decode()
         self.assertIn(comments, edited)
         loader = omarchy.find_loader(edited, "hypr.dotfiles")
         self.assertIsNotNone(loader)
         self.assertLess(loader.start(), omarchy.find_loader(edited, "default.hypr.toggles").start())
+
+    def plugin_command(self, plugins, loaded=()):
+        """Plan the plugin step against fake Omarchy and Hyprland plugin lists."""
+        answers = {"omarchy": plugins, "hyprctl": [{"name": name} for name in loaded]}
+        with patch.object(omarchy.Path, "home", return_value=self.home), \
+                patch.object(omarchy, "read_json", side_effect=lambda command: answers[command[0]]):
+            return omarchy.plugin_command(self.args)
+
+    def test_plugin_is_added_or_enabled_until_it_is_enabled(self):
+        self.assertEqual(self.plugin_command([]), ["omarchy", "plugin", "add", omarchy.PLUGIN_URL, "--enable", "--yes"])
+        disabled = [{"id": omarchy.PLUGIN_ID, "enabled": False}]
+        self.assertEqual(self.plugin_command(disabled), ["omarchy", "plugin", "enable", omarchy.PLUGIN_ID])
+        self.assertIsNone(self.plugin_command([{"id": omarchy.PLUGIN_ID, "enabled": True}], loaded=["hy3"]))
+
+    def test_plugin_waits_while_another_setup_has_hy3_loaded(self):
+        self.assertIsNone(self.plugin_command([], loaded=["hy3"]))
+        self.assertIn("WAIT plugin", self.output.getvalue())
+
+    def test_plugin_is_skipped_for_another_home(self):
+        with patch.object(omarchy, "read_json", side_effect=AssertionError("No desktop query expected")):
+            self.assertIsNone(omarchy.plugin_command(self.args))
+        self.assertIn("SKIP plugin", self.output.getvalue())
+
+    def test_apply_outside_the_desktop_stops_before_writing(self):
+        main = self.home / ".config/hypr/hyprland.lua"
+        main.parent.mkdir(parents=True)
+        main.write_text('require("default.hypr.toggles")\n')
+        env = dict(os.environ, HOME=str(self.home), PATH=str(self.home / "no-bin"),
+                   OMARCHY_PATH=os.environ.get("OMARCHY_PATH", "/usr/share/omarchy"))
+        env.pop("XDG_CONFIG_HOME", None)
+        result = subprocess.run([omarchy.sys.executable, str(SCRIPT), "--home", str(self.home), "--apply"],
+                                env=env, capture_output=True, text=True)
+        if "nothing to do" in result.stdout:
+            self.skipTest("Omarchy is not installed")
+        self.assertEqual(result.returncode, 1)
+        self.assertIn("Omarchy desktop session", result.stderr)
+        self.assertEqual(main.read_text(), 'require("default.hypr.toggles")\n')
+        self.assertFalse((self.home / ".dotfiles-backup").exists())
 
     def test_other_systems_are_a_no_op(self):
         env = dict(os.environ, OMARCHY_PATH=str(self.home / "not-omarchy"))
